@@ -1,0 +1,43 @@
+Can mulligan [<Minion ('Ironforge Rifleman')>, <Minion ('Grand Crusader')>, <Minion ('Sludge Belcher')>, <Minion ('Dire Wolf Alpha')>]
+Can mulligan [<Minion ('Grand Crusader')>, <Minion ('Blood Knight')>, <Minion ('Tinkmaster Overspark')>, <Spell ('Bouncing Blade')>]
+Playing <Spell ('The Coin')> on None
+Playing <Minion ('Dire Wolf Alpha')> on None
+Playing <Minion ('Dancing Swords')> on None
+Playing <Minion ('Fencing Coach')> on None
+Playing <Minion ('Antique Healbot')> on None
+Playing <Minion ('Stormwind Knight')> on None
+Playing <Minion ('Sludge Belcher')> on None
+Playing <Minion ('Grand Crusader')> on None
+Playing <Minion ('Stormwind Champion')> on None
+Playing <Minion ('Drakonid Crusher')> on None
+Playing <Minion ('Soot Spewer')> on None
+Playing <Minion ('Gnomeregan Infantry')> on None
+Playing <Minion ('Coldlight Oracle')> on None
+Playing <Secret ('Repentance')> on None
+Playing <Minion ('Faerie Dragon')> on None
+Playing <Minion ('North Sea Kraken')> on <Minion ('Coldlight Oracle')>
+Playing <Minion ("Mogu'shan Warden")> on None
+Playing <Minion ('The Skeleton Knight')> on None
+Playing <Minion ('Goldshire Footman')> on None
+Playing <Spell ('Mirror Image')> on None
+Playing <Minion ('Ysera')> on None
+Playing <Minion ('Questing Adventurer')> on None
+Playing <Minion ('Tournament Attendee')> on None
+Playing <Minion ('Mind Control Tech')> on None
+Playing <Minion ('Flamewaker')> on None
+Playing <Minion ('Kvaldir Raider')> on None
+Playing <Minion ('Baron Rivendare')> on None
+Playing <Minion ('Eerie Statue')> on None
+Playing <Minion ('Grand Crusader')> on None
+Playing <Minion ('Sylvanas Windrunner')> on None
+Playing <Spell ('Bouncing Blade')> on None
+Playing <Minion ('Nozdormu')> on None
+Playing <Minion ('Tinkmaster Overspark')> on None
+Playing <Spell ('Dream')> on <Minion ('Devilsaur')>
+Playing <Minion ('Murloc Tinyfin')> on None
+Playing <Minion ("Sneed's Old Shredder")> on None
+Playing <Minion ('Stranglethorn Tiger')> on None
+Playing <Minion ('Acolyte of Pain')> on None
+Playing <Minion ('Faerie Dragon')> on None
+Playing <Minion ('Leeroy Jenkins')> on None
+Game completed normally.

@@ -1,0 +1,27 @@
+# https://travis-ci.org/#!/jleclanche/fireplace
+sudo: false
+language: python
+python:
+  - 3.5
+cache:
+  directories:
+    - $HOME/.pip-cache/
+    - $HOME/virtualenv/python3.5
+script:
+  # Travis will automatically detect requirements.txt and run pip install
+  - ./bootstrap
+  - ./setup.py install
+  - py.test
+notifications:
+  email:
+    on_failure: always
+    on_success: change
+  irc:
+    channels:
+      - "chat.freenode.net#hearthsim"
+    use_notice: true
+    skip_join: true
+    on_failure: always
+    on_success: change
+    template:
+      - "(%{branch} @ %{commit} : %{author}): %{message} %{build_url}"
