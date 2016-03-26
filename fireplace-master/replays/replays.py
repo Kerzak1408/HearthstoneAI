@@ -1,5 +1,6 @@
 import sys; sys.path.append("..")
 import random
+from fireplace.card import *
 from fireplace.cards.heroes import *
 from fireplace.exceptions import GameOver
 from fireplace.game import Game
@@ -9,9 +10,146 @@ from hearthstone.enums import Zone, Rarity
 from fireplace.dsl.selector import CURRENT_HEALTH, FRIENDLY_HERO, ENEMY_MINIONS,\
     FRIENDLY_MINIONS, CONTROLLED_BY, Selector, IN_HAND
 from behaviors.face_hunter import *
+from behaviors.utils import *
 from fireplace.card import Spell, Secret, Weapon, HeroPower, Hero
 from _datetime import date, datetime
 
+def log_deck(deck_file, player):
+    deck = player.get_deck()
+    for id in deck:
+        card = fireplace.cards.db[id]
+        write_line_to_file(deck_file, card.name)
+    deck_file.close()
+    
+def write_line_to_file(file, line):
+    file.write(line + "\n")
+    
+def get_game_state(game):
+    curr = game.current_player
+    opp = curr.opponent
+    
+    result = {}
+    result["curr_minions_count"] = len(curr.field)
+    result["opp_minions_count"] = len(opp.field)
+    result["curr_taunts_count"] = get_taunt_count(curr.field)
+    result["opp_taunts_count"] = get_taunt_count(opp.field)
+    result["curr_hand_size"] = len(curr.hand)
+    result["opp_hand_size"] = len(opp.hand)
+    result["curr_mana_left"] = curr._max_mana - curr.used_mana
+    result["curr_max_mana"] = curr._max_mana
+    result["opp_max_mana"] = opp._max_mana
+    result["curr_hero_hp"] = curr.hero.health
+    result["opp_hero_hp"] = opp.hero.health
+    
+    for i in range(1,15):
+        minion_state = get_minion_state(i, game)
+        result.update(minion_state)
+
+    for i in range(1,11):
+        card_state = get_card_state(i, game)
+        result.update(card_state)
+    
+    return result
+
+def get_minion_state(i, game):
+    result = {}
+    if (i > 7):
+        player = game.current_player.opponent
+    else:
+        player = game.current_player
+        
+    position = i - 1
+    position = position % 7
+    
+    if (len(player.field) < i):
+        result["minion_" + str(i) + "_id"] = -1
+        result["minion_" + str(i) + "_can_attack"] = -1
+        result["minion_" + str(i) + "_hp"] = -1
+        result["minion_" + str(i) + "_attack"] = -1
+        result["minion_" + str(i) + "_is_silenced"] = -1
+        result["minion_" + str(i) + "_has_taunt"] = -1
+    else:
+        minion = player.field[position]
+        result["minion_" + str(i) + "_id"] = minion.entity_id
+        result["minion_" + str(i) + "_can_attack"] = get_int_from_bool(minion.can_attack())
+        result["minion_" + str(i) + "_hp"] = minion.health
+        result["minion_" + str(i) + "_attack"] = minion.atk
+        result["minion_" + str(i) + "_is_silenced"] = get_int_from_bool(minion.silenced)
+        result["minion_" + str(i) + "_has_taunt"] = get_int_from_bool(minion.taunt)
+    return result
+
+def get_card_state(i,game):
+    result = {}
+    player = game.current_player
+    position = i - 1
+    
+    if (len(player.hand) < i):
+        result["card_" + str(i) + "_id"] = -1
+        result["card_" + str(i) + "_cost"] = -1
+        result["card_" + str(i) + "_class"] = -1
+    else:
+        card = player.hand[position]
+        result["card_" + str(i) + "_id"] = card.entity_id
+        result["card_" + str(i) + "_cost"] = card.cost
+        if (card.__class__ is Minion):
+            result["card_" + str(i) + "_class"] = 0
+        elif (card.__class__ is Spell):
+            result["card_" + str(i) + "_class"] = 1
+        else:
+            result["card_" + str(i) + "_class"] = 2
+    return result
+
+'''
+Returns 1 if boolean_value is True
+        0 otherwise
+'''
+def get_int_from_bool(boolean_value):
+    if (boolean_value):
+        return 1
+    else:
+        return 0
+    
+'''
+Header for csv file
+'''
+def get_field_names():
+    result = []
+    result.append("curr_minions_count")
+    result.append("opp_minions_count")
+    result.append("curr_taunts_count")
+    result.append("opp_taunts_count")
+    result.append("curr_hand_size")
+    result.append("opp_hand_size")
+    result.append("curr_mana_left")
+    result.append("curr_max_mana")
+    result.append("opp_max_mana")
+    result.append("curr_hero_hp")
+    result.append("opp_hero_hp")
+    
+    for i in range(1,15):
+        result = result + get_minion_header(i)
+
+    for i in range(1,11):
+        result = result + get_card_header(i)
+    
+    return result
+
+def get_minion_header(i):
+    result = []
+    result.append("minion_" + str(i) + "_id")
+    result.append("minion_" + str(i) + "_can_attack")
+    result.append("minion_" + str(i) + "_hp")
+    result.append("minion_" + str(i) + "_attack")
+    result.append("minion_" + str(i) + "_is_silenced")
+    result.append("minion_" + str(i) + "_has_taunt")
+    return result
+
+def get_card_header(i):
+    result = []
+    result.append("card_" + str(i) + "_id")
+    result.append("card_" + str(i) + "_cost")
+    result.append("card_" + str(i) + "_class") #spell, minion
+    return result
 """ 
 idCounter - probably unnecessary
 type - type of action: 0 == play, 1 == draw, 2 == discard, 9 == attack
