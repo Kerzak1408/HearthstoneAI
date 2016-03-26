@@ -22,7 +22,7 @@ from _datetime import date, datetime
 
 ''' !!! CHOOSE PLAYERS !!! '''
 player1 = Face_hunter("Player1")
-player2 = Random("Player2", MAGE)
+player2 = Random("Player2", WARLOCK)
 
 
 # leave unchanged
