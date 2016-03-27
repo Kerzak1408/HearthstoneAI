@@ -14,5 +14,6 @@ To implement AI for Hearthstone using open source Hearthstone simulator FirePlac
 
 ### Random player
 * Plays cards and attacks randomly.
+
 ### Face hunter
 * Plays cards to use maximum mana. Attacks opponent hero if possible (If not, destroys taunts). 
