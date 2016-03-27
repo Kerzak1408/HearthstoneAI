@@ -13,5 +13,6 @@ To implement AI for Hearthstone using open source Hearthstone simulator FirePlac
   3. __2 .hsdeck.txt file__ that list used decks
 
 ### Random player
-
+* Plays cards and attacks randomly.
 ### Face hunter
+* Plays cards to use maximum mana. Attacks opponent hero if possible (If not, destroys taunts). 
