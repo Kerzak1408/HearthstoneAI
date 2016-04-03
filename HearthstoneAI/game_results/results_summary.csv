@@ -1,0 +1,13 @@
+Player_1_id,Player_1_deck_id,Player_1_final_hp,Player_2_id,Player_2_deck_id,Player_2_final_hp,Final_turn
+
+Face_hunter_1,hunter_face,13,Face_hunter_1,hunter_face,0,9
+Face_hunter_1,hunter_face,0,Face_hunter_1,hunter_face,8,12
+Face_hunter_1,hunter_face,0,Face_hunter_1,hunter_face,3,12
+Face_hunter_1,hunter_face,0,Face_hunter_1,hunter_face,18,10
+Face_hunter_1,hunter_face,0,Face_hunter_1,hunter_face,11,10
+Face_hunter_1,hunter_face,16,Face_hunter_1,hunter_face,0,9
+Random_bot_1,hunter_face,0,Face_hunter_1,hunter_face,29,12
+Face_hunter_1,hunter_face,30,Random_bot_1,hunter_face,0,11
+Face_hunter_1,hunter_face,23,Random_bot_1,hunter_face,0,11
+Face_hunter_1,hunter_face,30,Random_bot_1,hunter_face,0,12
+Face_hunter_1,hunter_face,30,Random_bot_1,hunter_face,0,11

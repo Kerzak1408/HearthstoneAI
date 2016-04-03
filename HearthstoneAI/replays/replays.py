@@ -9,8 +9,7 @@ from fireplace.utils import *
 from hearthstone.enums import Zone, Rarity
 from fireplace.dsl.selector import CURRENT_HEALTH, FRIENDLY_HERO, ENEMY_MINIONS,\
     FRIENDLY_MINIONS, CONTROLLED_BY, Selector, IN_HAND
-from behaviors.face_hunter import *
-from behaviors.utils import *
+from AI.utils import *
 from fireplace.card import Spell, Secret, Weapon, HeroPower, Hero
 from _datetime import date, datetime
 
@@ -110,7 +109,7 @@ def get_int_from_bool(boolean_value):
         return 0
     
 '''
-Header for csv file
+Header for csv file of a single game
 '''
 def get_field_names():
     result = []
