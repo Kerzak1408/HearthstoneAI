@@ -15,17 +15,17 @@
 
 ## Examples
 
-### Running game N times
+#### Running game N times
  * Let say we want to run Face_hunter (hunter_face deck) VS Random_bot (hunter_face deck) 5 times.
   1. Open CMD
   2. Navigate to ...\HearthstoneAI\tests
   3. "python general_game.py Face_hunter hunter_face Random_bot hunter_face 5"
 
-### Creating a new AI
+#### Creating a new AI
  * Each AI must be located in \HearthstoneAI\AI\bots\
  * Before starting, let you inspire by bot_template.py - There is everything you need to implement + some advices
 
-### Adding a new deck
+#### Adding a new deck
  * Deck is a .txt file located in \HearthstoneAI\AI\decks\
  * Its name must begin with the class name it is designated for. This has to be followed by "_"
   * Hunter deck file must be named hunter_WHATEVER.txt
