@@ -187,7 +187,8 @@ Returns json that is used for storing result attributes- date, num of games toda
 If date isn t equal to the current date, change it and set attributes to default values.
 '''
 def get_attributes():
-    path_to_attributes = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'attributes.json')
+    path_to_attributes = os.path.join(os.path.dirname(os.getcwd()), 'attributes.json')
+    print(path_to_attributes)
     attributes_file = open(path_to_attributes)
     result = json.load(attributes_file)
     attributes_file.close()
@@ -205,7 +206,7 @@ Writes json_content into attributes.json file
 def set_attributes(json_content):
     json_content["NumGame"] = json_content["NumGame"] + 1
     
-    path_to_attributes = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'attributes.json')
+    path_to_attributes = os.path.join(os.path.dirname(os.getcwd()), 'attributes.json')
     attributes_file = open(path_to_attributes,'w')
     attributes_file.write(json.dumps(json_content))
     attributes_file.close()
