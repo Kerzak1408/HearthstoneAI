@@ -40,10 +40,6 @@
   * Mage deck file must be named mage_WHATEVER.txt
  * Deck file must consist of 30 card names (1 card on 1 line)
 
-### Running AI
-  1. Go to HearthstoneAI/HearthstoneAI/tests
-  2. python
-
 ## Changes
 * 03. 04. 2016
   1. Evaluation framework improved 
