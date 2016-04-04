@@ -1,19 +1,30 @@
 # HearthstoneAI 
 
-## Goal
+## Description
+  * Using FirePlace Hearthstone simulator https://github.com/jleclanche/fireplace.
+  * Replays
+  * Results statistically processable
+  * Random bot
+  * Face hunter
 
-To implement AI for Hearthstone using open source Hearthstone simulator FirePlace: https://github.com/jleclanche/fireplace.
+## Requirements
+  * Python 3.5+
 
-## Implemented
+## Installation
+  * pip install -r requirements.txt
 
-### Replays
-* general_game.py outputs following files:
-  1. __.hdtreplay file__ viewable with Hearthstone Deck Tracker (https://github.com/Epix37/Hearthstone-Deck-Tracker/releases)
-  2. __.csv file__ with game history for statistical processing
-  3. __2 .hsdeck.txt file__ that list used decks
+## Examples
 
-### Random player
-* Plays cards and attacks randomly.
+### Running AI
+  1. Go to HearthstoneAI/HearthstoneAI/tests
+  2. python
 
-### Face hunter
-* Plays cards to use maximum mana. Attacks opponent hero if possible (If not, destroys taunts). 
+## Changes
+* 03. 04. 2016
+  1. Evaluation framework improved 
+    * replays in /HearthstoneAI/game_results
+    * summary results in /HearthstoneAI/game_results/results_summary.csv
+  2. general_game.py extended
+    * runnable in command-line with arguments: ai_1_name, deck_1_id, ai_2_name, deck_2_id, num_games
+  3. All AIs are now in /HearthstoneAI/AI/bots/
+  4. All decks are now in /HearthstoneAI/AI/decks/ and their names begins with class name followed by "_"
