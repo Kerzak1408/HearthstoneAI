@@ -13,13 +13,21 @@
 ## Installation
   * pip install -r requirements.txt
 
-## Examples
+## Usage examples
 
 #### Running game N times
  * Let say we want to run Face_hunter (hunter_face deck) VS Random_bot (hunter_face deck) 5 times.
   1. Open CMD
   2. Navigate to ...\HearthstoneAI\tests
   3. "python general_game.py Face_hunter hunter_face Random_bot hunter_face 5"
+
+#### Results
+ * Each simulation creates its own folder in \HearthstoneAI\game_results\
+ * Result folder is named AI_1_id-deck_1_id-AI_2_id-deck_2_id-date-num_game_today
+ * Same naming convention is applied to the files that folder contains. That are:
+  * .hdtreplay file viewable by Hearthstone Deck Tracker - https://github.com/Epix37/Hearthstone-Deck-Tracker
+  * .csv file containing snapshot of game state before each turn on each line
+ * Summary game result is located in HearthstoneAI\game_results\results_summary.csv
 
 #### Creating a new AI
  * Each AI must be located in \HearthstoneAI\AI\bots\
