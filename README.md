@@ -11,15 +11,16 @@
   * Python 3.5+
 
 ## Installation
-  * pip install -r requirements.txt
+ * Navigate to \HearthstoneAI\
+ * "pip install -r requirements.txt"
+ * And finally run bootstrap.bat
 
 ## Usage examples
 
 #### Running game N times
  * Let say we want to run Face_hunter (hunter_face deck) VS Random_bot (hunter_face deck) 5 times.
-  1. Open CMD
-  2. Navigate to ...\HearthstoneAI\tests
-  3. "python general_game.py Face_hunter hunter_face Random_bot hunter_face 5"
+  1. Navigate to ...\HearthstoneAI\tests
+  2. "python general_game.py Face_hunter hunter_face Random_bot hunter_face 5"
 
 #### Results
  * Each simulation creates its own folder in \HearthstoneAI\game_results\
