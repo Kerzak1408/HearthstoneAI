@@ -6,6 +6,7 @@
   * Results statistically processable
   * Random bot
   * Face hunter
+  * Malygos freeze mage
 
 ## Requirements
   * Python 3.5+
@@ -21,6 +22,8 @@
  * Let say we want to run Face_hunter (hunter_face deck) VS Random_bot (hunter_face deck) 5 times.
   1. Navigate to ...\HearthstoneAI\tests
   2. "python general_game.py Face_hunter hunter_face Random_bot hunter_face 5"
+  3. If we want also to clear results_summary.csv file, instead of 2.: 
+     "python general_game.py Face_hunter hunter_face Random_bot hunter_face 5 T"
 
 #### Results
  * Each simulation creates its own folder in \HearthstoneAI\game_results\
@@ -50,3 +53,17 @@
     * runnable in command-line with arguments: ai_1_name, deck_1_id, ai_2_name, deck_2_id, num_games
   3. All AIs are now in \HearthstoneAI\AI\bots\
   4. All decks are now in \HearthstoneAI\AI\decks\ and their names begins with class name followed by "_"
+
+* 10. 04. 2016
+ 1. Malygos freeze mage
+  * Tries to survive until combo is playable (freeze + def. secrets)
+  * Combo: 
+   a. TURN   N: Emperor Thaurissan
+   b. TURN N+1: Malygos + 2x Frost Bolt + 2x Ice Lance
+2. Mulligan phase
+ * From now, AIs implements get_mulligans(self, choice_cards), that shoud return unwanted cards. This is called before 1st turn of a     game. 
+3. Spell targets in Replays
+ * Replays show also the target of Spell, if there exists one.
+4. Results summary
+ * You can add "T" as a 6th argument, if you want to clear results_summary.csv file before the next simulation
+ * Column "Winner" added to results_summary.csv file
