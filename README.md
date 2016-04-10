@@ -60,10 +60,10 @@
   * Combo: 
    a. TURN   N: Emperor Thaurissan
    b. TURN N+1: Malygos + 2x Frost Bolt + 2x Ice Lance
-2. Mulligan phase
- * From now, AIs implements get_mulligans(self, choice_cards), that shoud return unwanted cards. This is called before 1st turn of a     game. 
-3. Spell targets in Replays
- * Replays show also the target of Spell, if there exists one.
-4. Results summary
- * You can add "T" as a 6th argument, if you want to clear results_summary.csv file before the next simulation
- * Column "Winner" added to results_summary.csv file
+ 2. Mulligan phase
+  * From now, AIs implements get_mulligans(self, choice_cards), that shoud return unwanted cards. This is called before 1st turn of a     game. 
+ 3. Spell targets in Replays
+  * Replays show also the target of Spell, if there exists one.
+ 4. Results summary
+  * You can add "T" as a 6th argument, if you want to clear results_summary.csv file before the next simulation
+  * Column "Winner" added to results_summary.csv file
