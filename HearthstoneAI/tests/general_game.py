@@ -30,6 +30,8 @@ DECK_1_ID = "hunter_face"
 DECK_2_ID = "hunter_face"
 ''' !!! Number of games to be simulated. !!! '''
 NUM_GAMES = 1
+''' Whether to clear result file before the first simulation. '''
+CLEAR_RESULTS = False
 
 player1 = None
 player2 = None
@@ -45,8 +47,7 @@ def play_full_game(my_json, game, csv_writer):
     
     for player in game.players:
 #        print("Can mulligan %r" % (player.choice.cards))
-        mull_count = random.randint(0, len(player.choice.cards))
-        cards_to_mulligan = random.sample(player.choice.cards, mull_count)
+        cards_to_mulligan = player.get_mulligans(player.choice.cards)
         player.choice.choose(*cards_to_mulligan)
 
     while True:
@@ -67,7 +68,7 @@ def play_full_game(my_json, game, csv_writer):
             csv_writer.writerow(game_state)
             
             turn_type = turn[0]
-            if (turn_type == 0):
+            if (turn_type == 0 or turn_type == 16):
                 "Play card"
                 card = turn[1]
                 target = turn[2]
@@ -77,10 +78,13 @@ def play_full_game(my_json, game, csv_writer):
                 else:
                     if (target != None):
                         card.play(target=target)
+                        hashmap = get_hash_map(game, player1, player2, turn_type, card.entity_id, card.entity_id, target.entity_id, card)
+                        my_json.append(hashmap)
                     else:
-                        card.play()    
-                hashmap = get_hash_map(game, player1, player2, turn_type, card.entity_id, None, None, card)
-                my_json.append(hashmap)
+                        card.play()
+                        hashmap = get_hash_map(game, player1, player2, turn_type, card.entity_id, None, None, card)
+                        my_json.append(hashmap)    
+                
                    
             elif (turn_type == 19):
                 "Hero Power"
@@ -92,7 +96,7 @@ def play_full_game(my_json, game, csv_writer):
                 else:
                     player.hero.power.use()
                 if (target != None):
-                    hashmap = get_hash_map(game, player1, player2, turn_type, hero_power.entity_id, None, None, hero_power)
+                    hashmap = get_hash_map(game, player1, player2, turn_type, hero_power.entity_id, hero_power.entity_id, target.entity_id, hero_power)
                 else:
                     hashmap = get_hash_map(game, player1, player2, turn_type, hero_power.entity_id, None, None, hero_power)
                 my_json.append(hashmap)
@@ -110,7 +114,7 @@ def play_full_game(my_json, game, csv_writer):
 
         game.end_turn()
     
-def test_full_game(ai_1_id, deck_1_id, ai_2_id, deck_2_id):
+def test_full_game(ai_1_id, deck_1_id, ai_2_id, deck_2_id, clear_results):
     global __last_turn__
     global player1
     global player2
@@ -173,8 +177,14 @@ def test_full_game(ai_1_id, deck_1_id, ai_2_id, deck_2_id):
         my_zip_file.write(REPLAY_JSON_PATH)
         
         path_to_result = os.path.join(os.path.dirname(os.getcwd()),"game_results","results_summary.csv")
-        csv_result_file = open(path_to_result,"a")
-        csv_writer = csv.DictWriter(csv_result_file, fieldnames=get_field_names_of_result())
+       
+        if (clear_results):
+            csv_result_file = open(path_to_result,"w")
+            csv_writer = csv.DictWriter(csv_result_file, fieldnames=get_field_names_of_result())
+            csv_writer.writeheader()
+        else:
+            csv_result_file = open(path_to_result,"a")
+            csv_writer = csv.DictWriter(csv_result_file, fieldnames=get_field_names_of_result())
         csv_writer.writerow(get_result_of_game(game))
         csv_result_file.close()
         f.close()
@@ -231,8 +241,16 @@ def main():
     global AI_2_ID
     global DECK_2_ID
     global NUM_GAMES
+    global CLEAR_RESULTS
     
-    if len(sys.argv) == 6:
+    ai_1_id = AI_1_ID
+    deck_1_id = DECK_1_ID
+    ai_2_id = AI_2_ID
+    deck_2_id = DECK_2_ID
+    numgames = NUM_GAMES
+    clear_results = CLEAR_RESULTS
+    
+    if (len(sys.argv) > 5):
         ''' Number of games to be simulated '''
         ai_1_id = sys.argv[1]
         deck_1_id = sys.argv[2]
@@ -240,17 +258,23 @@ def main():
         deck_2_id = sys.argv[4]
         numgames = sys.argv[5]
         
-        if not numgames.isdigit():
-            sys.stderr.write("Usage: %s [NUMGAMES]\n" % (sys.argv[0]))
-            exit(1)
-        for i in range(int(numgames)):
-            test_full_game(ai_1_id,deck_1_id,ai_2_id,deck_2_id)
-    else:
-        print("!!! WARNING: Wrong number of arguments. Default values were used. !!!")
-        for i in range(NUM_GAMES):
-            test_full_game(AI_1_ID, DECK_1_ID, AI_2_ID, DECK_2_ID)
+    if (len(sys.argv) > 6):
+        sixth_arg = sys.argv[6]
+        if (sixth_arg == "T"):
+            clear_results = True
+
+    if (len(sys.argv) <= 5):
         print("!!! WARNING: Wrong number of arguments. Default values were used. !!!")
 
+    if not numgames.isdigit():
+            sys.stderr.write("Usage: %s [NUMGAMES]\n" % (sys.argv[0]))
+            exit(1)
+    for i in range(int(numgames)):
+            if (i == 0):
+                test_full_game(ai_1_id,deck_1_id,ai_2_id,deck_2_id, clear_results)
+            else:
+                test_full_game(ai_1_id,deck_1_id,ai_2_id,deck_2_id, False)
+            
 if __name__ == "__main__":
     main()
 

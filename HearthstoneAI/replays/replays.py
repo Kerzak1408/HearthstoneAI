@@ -166,6 +166,11 @@ def get_hash_map(game, player1, player2, type, id, attacker_id, defender_id, pla
     player2Data = get_player_data(player2)
     dataArray.append(player2Data)
     
+    for character in game.graveyard:
+        if (character.__class__ is Minion):
+            character_data = get_character_data(character, attacker_id)
+            dataArray.append(character_data)
+    
     for card in player1.hand:
         cardData = get_card_data(card)
         dataArray.append(cardData)
@@ -192,16 +197,16 @@ def get_hash_map(game, player1, player2, type, id, attacker_id, defender_id, pla
         
     for secret in player1.secrets:
         if (played_card != secret):
-            secretData = get_card_data(secret)
+            secretData = get_card_data(secret, defender_id)
             dataArray.append(secretData)
     
     for secret in player2.secrets:
         if (played_card != secret):
-            secretData = get_card_data(secret)
+            secretData = get_card_data(secret, defender_id)
             dataArray.append(secretData)
     
     if ((played_card.__class__ is Spell) or (played_card.__class__ is Secret) or (played_card.__class__ is Weapon) or played_card.__class__ is HeroPower):
-        played_card_data = get_card_data(played_card)
+        played_card_data = get_card_data(played_card, defender_id)
         dataArray.append(played_card_data)
                          
     if (player1.weapon != None):
@@ -329,7 +334,7 @@ def get_weapon_data(card):
     
     return result
     
-def get_card_data(card):
+def get_card_data(card, target_id = None):
     result = {}
     
     tags = {}
@@ -339,6 +344,8 @@ def get_card_data(card):
     tags["ZONE_POSITION"] = card.zone_position + 1
     tags["CANT_PLAY"] = 0
     tags["REVEALED"] = 0
+    if (target_id != None):
+        tags["CARD_TARGET"] = target_id
     
     result["Tags"] = tags
     result["Name"] = "null"

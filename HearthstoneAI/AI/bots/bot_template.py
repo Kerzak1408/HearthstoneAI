@@ -16,6 +16,7 @@ class Bot_template(Player):
     ''' You can change this. But this works if deck file is valid. '''
     def __init__(self, name, deck_id):
         hero = get_hero(deck_id)
+        self.deck_id = deck_id
         self.original_deck = get_deck_by_id(deck_id)
         super(Face_hunter, self).__init__(name, self.original_deck, hero)
     
@@ -31,12 +32,23 @@ class Bot_template(Player):
     def get_deck_id(self):
         return self.deck_id
     
+    '''
+    Choose a list of cards to mulligan.
+    I should return the list of the cards you want to discard.
+    This is called only before the first turn of each game.
+    If you leave it unchanged, it will choose randomly.
+    '''
+    def get_mulligans(self, choice_cards):
+        mull_count = random.randint(0, len(choice_cards))
+        return random.sample(choice_cards, mull_count)
+    
     """
     Choose next action to do.
     Action patterns:
     Play card: [0, card, target]
        Attack: [9, attacker, defender]
     Hero Pow.: [19, target]
+    Spell attack: [16, card, target]
      End Turn: []
     """
     def get_next_turn(self, game):

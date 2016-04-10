@@ -18,9 +18,9 @@ class Random_bot(Player):
     version = 1
     
     def __init__(self, name, deck_id):
-        hero = get_random_hero()
+        hero = get_hero(deck_id)
         self.deck_id = deck_id
-        self.original_deck = random_draft(hero = hero)
+        self.original_deck = get_deck_by_id(deck_id)
         super(Random_bot, self).__init__(name, self.original_deck, hero)
     
     def get_id(self):
@@ -31,6 +31,10 @@ class Random_bot(Player):
     
     def get_deck_id(self):
         return self.deck_id
+    
+    def get_mulligans(self, choice_cards):
+        mull_count = random.randint(0, len(choice_cards))
+        return random.sample(choice_cards, mull_count)
     
     """
     Choose next action to do.

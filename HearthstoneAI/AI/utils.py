@@ -6,6 +6,77 @@ from hearthstone.enums import Race
 from fireplace.player import Player
 from fireplace.cards.heroes import *
 
+
+
+'''
+Description is a string that contains number preceded by "$".
+Returns this number.
+'''
+def get_damage_from_description(description):
+    array = description.split()
+    for substring in array:
+        if substring[0] == "$":
+            result_str = substring
+            break
+    result_str = result_str[1:]
+    return int(result_str)        
+
+'''
+Returns True iff there is a character among enemy characters with HP 
+equal to attacker's attack.
+'''
+def has_enemy_worthy_to_attack(attacker, player):
+    atk = attacker.atk
+    for character in player.opponent.characters:
+        if (character in attacker.targets and atk == character.health):
+            return True
+    return False
+
+'''
+Returns an enemy character such that its HP are equal to attacker's
+attack if there is such. Otherwise return None.
+'''
+def get_enemy_worthy_to_attack(attacker, player):
+    atk = attacker.atk
+    for character in player.opponent.characters:
+        if (character in attacker.targets and atk == character.health):
+            return character
+    return None
+
+'''
+Returns True iff there is a character among enemy characters with HP 
+equal to card's damage.
+USE ONLY for the spell cards that deal damage to a single target.
+'''
+def has_enemy_worthy_to_destroy(card, player):
+    damage = get_damage_from_description(card.data.description)
+    for character in player.opponent.characters:
+        if (character in card.targets and damage == character.health):
+            return True
+    return False
+
+'''
+Returns character from enemy characters thats HP are equal to
+cards attack.
+If there is no such enemy returns None.
+USE ONLY for the spell cards that deal damage to a single target.
+'''
+def get_enemy_worthy_to_destroy(card, player):
+    damage = get_damage_from_description(card.data.description)
+    for character in player.opponent.characters:
+        if (character in card.targets and damage == character.health):
+            return character
+    return None
+
+'''
+Returns the sum of attack of all player's characters
+'''
+def get_total_player_attack(player):
+    result = 0
+    for character in player.characters:
+        result = result + character.atk
+    return result
+
 def get_field_names_of_result():
     result = []
     result.append("Player_1_id")
@@ -15,6 +86,7 @@ def get_field_names_of_result():
     result.append("Player_2_deck_id")
     result.append("Player_2_final_hp")
     result.append("Final_turn")
+    result.append("Winner")
     return result
     
 
@@ -27,6 +99,17 @@ def get_result_of_game(game):
     result["Player_2_deck_id"] = game.player2.get_deck_id()
     result["Player_2_final_hp"] = game.player2.hero.health
     result["Final_turn"] = game.turn
+    if (game.player1.hero.health < 1):
+        if (game.player2.hero.health < 1):
+            winner = "None"
+        else:
+            winner = game.player2.get_id()
+    else:
+        if (game.player2.hero.health < 1):
+            winner = game.player1.get_id()
+        else:
+            winner = "Error"
+    result["Winner"] = winner    
     return result
 
 '''
@@ -109,6 +192,17 @@ def get_turn_item_play_card(card, target):
     return result
 
 """
+Returns turn item for action 16 = attack with spell
+Play card: [16, card, target]
+"""
+def get_turn_item_spell_attack(card, target):
+    result = [16]
+    result.append(card)
+    result.append(target)
+    print(result)
+    return result
+
+"""
 Returns turn item for action 19 = hero power use
 Hero Power: [19, target]
 """
@@ -142,12 +236,28 @@ def has_beast(cards):
     return result
 
 """
+Returns True if player has minion with given name,
+        False otherwise
+"""
+def has_specific_minion(player, name):
+    for card in player.field:
+        if (card.name == name):
+            return True
+    return False
+
+"""
 Returns True if player has card with given name,
         False otherwise
 """
 def has_specific_card(player, name):
     for card in player.hand:
         if (card.name == name):
+            return True
+    return False
+
+def has_specific_playable_card(player,name):
+    for card in player.hand:
+        if (card.name == name and card.is_playable()):
             return True
     return False
 

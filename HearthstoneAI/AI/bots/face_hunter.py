@@ -35,6 +35,14 @@ class Face_hunter(Player):
     def get_deck_id(self):
         return self.deck_id
     
+    def get_mulligans(self, choice_cards):
+        mulligans = []
+        for card in choice_cards:
+            if (card.name != "Leper Gnome" and
+                card.name != "Worgen Infiltrator"):
+                mulligans.append(card)
+        return mulligans
+    
     """
     Choose next action to do.
     Action patterns:
@@ -76,7 +84,10 @@ class Face_hunter(Player):
                         target = random.choice(card.targets)
                 if (card == player.hero.power):
                     return get_turn_item_hero_power(card,target)
-                return get_turn_item_play_card(card,target)
+                if (target == None):
+                    return get_turn_item_play_card(card,target)
+                else:
+                    return get_turn_item_spell_attack(card, target)
         #attack
         for character in player.characters:
            if character.can_attack(target = player.opponent.hero):
