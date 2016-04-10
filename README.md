@@ -47,22 +47,22 @@
 ## Changes
 * 03. 04. 2016
   1. Evaluation framework improved 
-   * replays in \HearthstoneAI\game_results
-   * summary results in \HearthstoneAI\game_results\results_summary.csv
+    * replays in \HearthstoneAI\game_results
+    * summary results in \HearthstoneAI\game_results\results_summary.csv
   2. general_game.py extended
-   * runnable in command-line with arguments: ai_1_name, deck_1_id, ai_2_name, deck_2_id, num_games
+    * runnable in command-line with arguments: ai_1_name, deck_1_id, ai_2_name, deck_2_id, num_games
   3. All AIs are now in \HearthstoneAI\AI\bots\
   4. All decks are now in \HearthstoneAI\AI\decks\ and their names begins with class name followed by "_"
 * 10. 04. 2016
   1. Malygos freeze mage
-   * Tries to survive until combo is playable (freeze + def. secrets)
-   * Combo: 
-    a. TURN   N: Emperor Thaurissan
-    b. TURN N+1: Malygos + 2x Frost Bolt + 2x Ice Lance
+    * Tries to survive until combo is playable (freeze + def. secrets)
+    * Combo: 
+      a. TURN   N: Emperor Thaurissan
+      b. TURN N+1: Malygos + 2x Frost Bolt + 2x Ice Lance
   2. Mulligan phase
-   * From now, AIs implements get_mulligans(self, choice_cards), that shoud return unwanted cards. This is called before 1st turn of a     game. 
+    * From now, AIs implements get_mulligans(self, choice_cards), that shoud return unwanted cards. This is called before 1st turn of a game. 
   3. Spell targets in Replays
-   * Replays show also the target of Spell, if there exists one.
+    * Replays show also the target of Spell, if there exists one.
   4. Results summary
-   * You can add "T" as a 6th argument, if you want to clear results_summary.csv file before the next simulation
-   * Column "Winner" added to results_summary.csv file
+    * You can add "T" as a 6th argument, if you want to clear results_summary.csv file before the next simulation
+    * Column "Winner" added to results_summary.csv file
