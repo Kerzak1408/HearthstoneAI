@@ -156,7 +156,17 @@ id - id of the entity related to the action
 attacker_id - id of attacker, in case o type 9, otherwise use None
 defender_id - id of defender, in case o type 9, otherwise use None
 """
-def get_hash_map(game, player1, player2, type, id, attacker_id, defender_id, played_card):
+def get_hash_map(game, player1, player2, type, id, attacker, defender, played_card):
+    
+    if (attacker != None):
+        attacker_id = attacker.entity_id
+    else:
+        attacker_id = None
+    if (defender != None):
+        defender_id = defender.entity_id
+    else:
+        defender_id = None
+    
     hashmap = {}
     dataArray = []
     gameData = get_game_data(game, attacker_id, defender_id)
@@ -168,7 +178,7 @@ def get_hash_map(game, player1, player2, type, id, attacker_id, defender_id, pla
     
     for character in game.graveyard:
         if (character.__class__ is Minion):
-            character_data = get_character_data(character, attacker_id)
+            character_data = get_character_data(character, attacker, defender)
             dataArray.append(character_data)
     
     for card in player1.hand:
@@ -188,11 +198,11 @@ def get_hash_map(game, player1, player2, type, id, attacker_id, defender_id, pla
         dataArray.append(cardData)
     
     for character in player1.characters:
-        characterData = get_character_data(character, attacker_id)
+        characterData = get_character_data(character, attacker, defender)
         dataArray.append(characterData)
     
     for character in player2.characters:
-        characterData = get_character_data(character, attacker_id)
+        characterData = get_character_data(character, attacker, defender)
         dataArray.append(characterData)
         
     for secret in player1.secrets:
@@ -355,10 +365,15 @@ def get_card_data(card, target_id = None):
     result["IsSecret"] = "false"
     return result
 
-def get_character_data(character, attacking_id):
+def get_character_data(character, attacker, defender):
+    if (attacker != None):
+        attacking_id = attacker.entity_id
+    else:
+        attacking_id = None
     result = {}
     
     tags = {}
+    
     tags["ZONE"] = character.zone.value
     tags["CONTROLLER"] = character.controller.entity_id
     tags["ENTITY_ID"] = character.entity_id
@@ -388,6 +403,9 @@ def get_character_data(character, attacking_id):
         tags["NUM_ATTACKS_THIS_TURN"] = character.num_attacks
     if(character.__class__ is Hero):
         tags["ARMOR"] = character.armor
+    else:
+        tags["TAUNT"] = get_int_from_bool(character.taunt)
+        tags["DIVINE_SHIELD"] = get_int_from_bool(character.divine_shield)
         
     result["Tags"] = tags
     result["Name"] = "null"

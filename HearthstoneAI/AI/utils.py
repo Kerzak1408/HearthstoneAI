@@ -1,10 +1,191 @@
 import fireplace.cards
 import random
 import os
-from fireplace.card import Spell
+from .character_model import *
+from fireplace.card import Spell, Hero
 from hearthstone.enums import Race
 from fireplace.player import Player
 from fireplace.cards.heroes import *
+from tkinter.tix import INTEGER
+
+def get_valuest_attack(player):
+    '''model characters'''
+    my_characters = [Character_model(player.hero)]
+    opponent_characters = [Character_model(player.opponent.hero)]
+    for minion in player.field:
+        if (minion.can_attack()):
+            ''' [minion, HP, ATK, has_taunt, has_divine_shield, can_attack] '''
+            my_characters.append(Character_model(minion))        
+    
+    for minion in player.opponent.field:
+        ''' [minion, HP, ATK, has_taunt, has_divine_shield, can_attack] '''
+        opponent_characters.append(Character_model(minion))
+    
+    targets = get_attackable_characters(opponent_characters)
+    
+    best_attack = []
+    best_score = 0
+    for target in targets:
+        my_characters = [Character_model(player.hero)]
+        for minion in player.field:
+            if (minion.can_attack()):
+                ''' [minion, HP, ATK, has_taunt, has_divine_shield, can_attack] '''
+                my_characters.append(Character_model(minion))
+        [attack,score] = destroy_target(target, [], my_characters)
+        if (score > best_score):
+            best_score = score
+            best_attack = attack
+    
+    if (best_attack == []):
+        for character in player.field:
+            if (character.can_attack(player.opponent.hero)):
+                return get_turn_item_attack(character, player.opponent.hero)
+        if (player.hero.can_attack(player.opponent.hero)):
+            return get_turn_item_attack(player.hero, player.opponent.hero)
+    return best_attack
+
+def destroy_target(target, first_attack, attacking_characters):
+    if (target.is_dead()):
+        return [first_attack,get_score_after_destroying(attacking_characters, target)]
+    if (not(can_any_model_attack(attacking_characters))):
+        return [first_attack, -1]
+    
+    best_score = 0
+    best_attack = first_attack
+    
+    for attacker in attacking_characters:
+        if (not(target.character in attacker.character.targets)):
+            attacker.can_attack = False
+        if (attacker.can_attack):
+            new_attacker = attacker.get_copy()
+            new_attacker.deal_damage(target.atk)
+            new_attacker.set_attacked()
+            new_target = target.get_copy()
+            new_target.deal_damage(attacker.atk)
+            new_my_characters = get_characters_with_replacement(attacking_characters, new_attacker)
+            
+            if (first_attack == []):
+                [result_attack, score] = destroy_target(new_target,get_turn_item_attack(attacker.character, target.character), new_my_characters)
+            else:
+                [result_attack, score] = destroy_target(new_target, first_attack, new_my_characters)
+            
+            if (score > best_score):
+                best_score = score
+                best_attack = result_attack
+    
+    return [best_attack, best_score]
+                    
+            
+            
+    
+def get_score_after_destroying(attacking_characters, destroyed):
+    if (destroyed.character.__class__ is Hero):
+        return 1000000
+    score = destroyed.character.atk + 0.5
+    for attacker in attacking_characters:
+        if (attacker.is_dead()):
+            score = score - attacker.atk
+    score = score + destroyed.health/10.0
+    return score
+    
+    
+
+''' Deprecated. Recursion - too long to compute '''            
+def get_best_attacks(my_characters, opponent_characters, first_attack, depth):
+    if (depth > 7 or not(can_any_model_attack(my_characters))):
+        return [first_attack, get_model_state_value(my_characters, opponent_characters)]
+    
+    best_turn = None
+    best_score = -1000000
+    
+    for character in my_characters:
+        if (character.can_attack):
+            targets = get_attackable_characters(opponent_characters)
+            for target in targets:
+                if (first_attack != None or target.character in character.character.targets):
+                    new_attacker = character.get_copy()
+                    new_attacker.deal_damage(target.atk)
+                    new_attacker.set_attacked()
+                    new_target = target.get_copy()
+                    new_target.deal_damage(character.atk)
+                    new_my_characters = get_characters_with_replacement(my_characters, new_attacker)
+                    new_opponent_characters = get_characters_with_replacement(opponent_characters, new_target)
+                    
+                    if (first_attack == None):
+                        [result_attack, score] = get_best_attacks(new_my_characters, new_opponent_characters, [character.character,target.character], depth + 1)
+                    else:
+                        [result_attack, score] = get_best_attacks(new_my_characters, new_opponent_characters, first_attack, depth + 1)
+                    
+                    if (score > best_score):
+                        best_score = score
+                        best_turn = result_attack
+    
+    current_score = get_model_state_value(my_characters, opponent_characters)
+    if (current_score > best_score):
+        best_score = current_score
+        best_turn = first_attack
+    
+    return [best_turn, best_score]
+                
+def get_characters_with_replacement(characters, replacement):
+    result = []
+    for character in characters:
+        if (character.character == replacement.character):
+            result.append(replacement)
+        else:
+            result.append(character.get_copy())
+    return result        
+                            
+    
+def get_model_state_value(my_characters, opponent_characters):
+    result = 0
+    for character in my_characters:
+        if (character.character.__class__ is Hero):
+            if (character.is_dead()):
+                return -1000
+            else:
+                to_be_added = character.health/30.0
+        else:
+            to_be_added = character.health + character.atk
+            if (character.has_divine_shield):
+                to_be_added = to_be_added * 1.5
+        result = result + to_be_added
+        
+    for character in opponent_characters:
+        if (character.character.__class__ is Hero):
+            if (character.is_dead()):
+                return 1000
+            else:
+                to_be_added = character.health/30.0
+        else:
+            to_be_added = -character.health - character.atk
+            if (character.has_divine_shield):
+                to_be_added = to_be_added * 1.5
+        result = result + to_be_added
+    
+    return result
+        
+def can_any_model_attack(models):
+    for model in models:
+        if (model.can_attack):
+            return True     
+    return False   
+        
+def get_attackable_characters(possible_targets):
+    result = []
+    if (is_taunt_among_models(possible_targets)):
+        for target in possible_targets:
+            if (target.has_taunt):
+                result.append(target)
+    else:
+        result = possible_targets
+    return result
+        
+def is_taunt_among_models(model_characters):
+    for model_character in model_characters:
+        if (model_character.can_attack):
+            return True
+    return False
 
 
 
@@ -44,29 +225,37 @@ def get_enemy_worthy_to_attack(attacker, player):
     return None
 
 '''
-Returns True iff there is a character among enemy characters with HP 
-equal to card's damage.
+
 USE ONLY for the spell cards that deal damage to a single target.
 '''
 def has_enemy_worthy_to_destroy(card, player):
     damage = get_damage_from_description(card.data.description)
     for character in player.opponent.characters:
-        if (character in card.targets and damage == character.health):
-            return True
+        if (character.__class__ is Hero):
+            if (character in card.targets and damage >= character.health):
+                return True
+        else:
+            if (character in card.targets and damage >= character.health and damage <= character.health + damage/2):
+                return True
     return False
 
 '''
-Returns character from enemy characters thats HP are equal to
-cards attack.
 If there is no such enemy returns None.
 USE ONLY for the spell cards that deal damage to a single target.
 '''
 def get_enemy_worthy_to_destroy(card, player):
     damage = get_damage_from_description(card.data.description)
+    target = None
     for character in player.opponent.characters:
-        if (character in card.targets and damage == character.health):
-            return character
-    return None
+        if (character.__class__ is Hero):
+            if (character in card.targets and (damage + get_total_player_attack(player)) >= character.health):
+                return character
+        else:
+            if (character in card.targets and damage >= character.health and damage <= character.health + damage/2):
+                if (target == None or character.health > target.health or 
+                    (character.health == target.health and character.atk > target.atk)):
+                    target = character
+    return target
 
 '''
 Returns the sum of attack of all player's characters

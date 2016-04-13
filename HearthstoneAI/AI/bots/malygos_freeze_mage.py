@@ -40,8 +40,16 @@ class Malygos_freeze_mage(Player):
         return self.deck_id
     
     def get_mulligans(self, choice_cards):
-        mull_count = random.randint(0, len(choice_cards))
-        return random.sample(choice_cards, mull_count)
+        result = []
+        for card in choice_cards:
+            if (card.name != "Loot Hoarder" and
+                card.name != "Mad Scientist" and
+                card.name != "Arcane Intellect" and
+                card.name != "Bloodmage Thalnos" and
+                card.name != "Doomayer" and
+                card.name != "Acolyte of Pain"):
+                result.append(card)
+        return result
     
     """
     Choose next action to do.
@@ -79,19 +87,27 @@ class Malygos_freeze_mage(Player):
                 break
         if (attacking_minion == None or len(attacking_minion.targets) == 0):
             return []
-        if (has_enemy_worthy_to_attack(attacking_minion, player)):
-            target = get_enemy_worthy_to_attack(attacking_minion, player)
-        elif (player.opponent.hero in attacking_minion.targets):
+        if (attacking_minion.name == "Acolyte of Pain"):
+            target = self.get_acolyte_target(attacking_minion)
+        if (player.opponent.hero in attacking_minion.targets):
             target = player.opponent.hero
         else:
             target = random.choice(attacking_minion.targets)
         
         return get_turn_item_attack(attacking_minion, target)
     
+    def get_acolyte_target(self, acolyte):
+        result = None
+        for target in acolyte.targets:
+            if (result == None):
+                result = target
+            elif (target.atk > 0 and target.atk < result.atk):
+                result = target                    
+    
     def get_next_waiting_phase_turn(self, player):
-        if (not(self.freezed_already) and get_total_player_attack(player.opponent) > 5):
-            self.freezed_already = True
+        if (not(self.freezed_already) and get_total_player_attack(player.opponent) > 9):
             if (self.has_playable_freeze_card(player)):
+                self.freezed_already = True
                 card = self.get_playable_freeze_card(player)
                 return get_turn_item_play_card(card,None)
         if (has_specific_card(player,"The Coin")):
@@ -108,18 +124,13 @@ class Malygos_freeze_mage(Player):
             next_card = cards_to_play[0][0]
             target = None
             if (next_card.has_target()):
-                if (next_card.name == "Pyroblast" or 
-                    next_card.name == "Fireball"):
-                    target = player.opponent.hero
-                elif (next_card.name == "Alexstrasza"):
+                if (next_card.name == "Alexstrasza"):
                     if ((15 - player.hero.health) > (player.opponent.hero.health - 15)):
                         target = player.hero
                     else:
                         target = player.opponent.hero
                 else:
-                    if (has_enemy_worthy_to_destroy(next_card, player)):
-                        target = get_enemy_worthy_to_destroy(next_card, player)
-                    elif (player.opponent.hero in next_card.targets):
+                    if (player.opponent.hero in next_card.targets):
                         target = player.opponent.hero
                     else:
                         target = random.choice(next_card.targets)
@@ -179,12 +190,15 @@ class Malygos_freeze_mage(Player):
                 else:
                     to_be_added = -1
             elif (card.name == "Doomsayer"):
-                to_be_added = 0
-                for card in cards:
-                    if (card.name == "Frost Nova" or
-                        card.name == "Blizzard"):
-                        to_be_added = 10
-           
+                to_be_added = -1
+                if (self.freezed_already):
+                    to_be_added = 10
+                if (get_total_player_attack(self.opponent) > 4 and get_total_player_attack(self.opponent) < 7):
+                    to_be_added = 5
+            elif (card.name == "Ice Block"):
+                to_be_added = 5
+            elif (card.name == "Ice Barrier"):
+                to_be_added = 4
             result = result + to_be_added
         return result
     
@@ -198,7 +212,7 @@ class Malygos_freeze_mage(Player):
                 card.name != "Blizzard" and
                 card.name != "Flamestrike" and 
                 (card.name != "Antique Healbot" or player.hero.health < 26) and
-                (card.name != "Doomsayer" or get_total_player_attack(player.opponent) > 5) and
+                (card.name != "Doomsayer" or get_total_player_attack(player.opponent) > 4) and
                 (card.name != "Arcane Intellect" or len(player.hand) < 10) and
                 (card.name != "Doomsayer" or not(has_specific_minion(player,"Doomsayer")))
                 )
@@ -229,7 +243,7 @@ class Malygos_freeze_mage(Player):
         elif (has_specific_playable_card(player, "Ice Lance")):
             card = get_specific_card(player,"Ice Lance")
             return get_turn_item_spell_attack(card,player.opponent.hero)
-        result = self.get_next_attack(current_player)
+        result = self.get_next_attack(player)
         if (result == []):
             self.combo_phase = 0
         return result

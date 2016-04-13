@@ -78,7 +78,7 @@ def play_full_game(my_json, game, csv_writer):
                 else:
                     if (target != None):
                         card.play(target=target)
-                        hashmap = get_hash_map(game, player1, player2, turn_type, card.entity_id, card.entity_id, target.entity_id, card)
+                        hashmap = get_hash_map(game, player1, player2, turn_type, card.entity_id, card, target, card)
                         my_json.append(hashmap)
                     else:
                         card.play()
@@ -96,7 +96,7 @@ def play_full_game(my_json, game, csv_writer):
                 else:
                     player.hero.power.use()
                 if (target != None):
-                    hashmap = get_hash_map(game, player1, player2, turn_type, hero_power.entity_id, hero_power.entity_id, target.entity_id, hero_power)
+                    hashmap = get_hash_map(game, player1, player2, turn_type, hero_power.entity_id, hero_power, target, hero_power)
                 else:
                     hashmap = get_hash_map(game, player1, player2, turn_type, hero_power.entity_id, None, None, hero_power)
                 my_json.append(hashmap)
@@ -106,7 +106,7 @@ def play_full_game(my_json, game, csv_writer):
                 defender = turn[2]
                 __last_turn__ = [attacker,defender,turn_type]
                 attacker.attack(defender)
-                hashmap = get_hash_map(game, player1, player2, turn_type, attacker.entity_id, attacker.entity_id, defender.entity_id, None)
+                hashmap = get_hash_map(game, player1, player2, turn_type, attacker.entity_id, attacker, defender, None)
                 my_json.append(hashmap)
                 
             "next players turn according to selected behavior"
@@ -156,10 +156,10 @@ def test_full_game(ai_1_id, deck_1_id, ai_2_id, deck_2_id, clear_results):
     except GameOver:
         #LAST TURN
         if (__last_turn__[1] != None):
-            hashmap = get_hash_map(game, player1, player2, __last_turn__[2], __last_turn__[0].entity_id,__last_turn__[0].entity_id, __last_turn__[1].entity_id, __last_turn__[0])
+            hashmap = get_hash_map(game, player1, player2, __last_turn__[2], __last_turn__[0].entity_id,__last_turn__[0], __last_turn__[1], __last_turn__[0])
             my_json.append(hashmap)
         else:
-            hashmap = get_hash_map(game, player1, player2, __last_turn__[2], __last_turn__[0].entity_id,__last_turn__[0].entity_id, None, __last_turn__[0])
+            hashmap = get_hash_map(game, player1, player2, __last_turn__[2], __last_turn__[0].entity_id,__last_turn__[0], None, __last_turn__[0])
             my_json.append(hashmap)
         
         #RESULT

@@ -13,12 +13,12 @@ class Bot_template(Player):
     ''' Name of the file containing deck. The file must be located in HearthstoneAI\AI\decks '''
     deck_id = None
     
-    ''' You can change this. But this works if deck file is valid. '''
+    ''' Change Bot_template to your class name '''
     def __init__(self, name, deck_id):
         hero = get_hero(deck_id)
         self.deck_id = deck_id
         self.original_deck = get_deck_by_id(deck_id)
-        super(Face_hunter, self).__init__(name, self.original_deck, hero)
+        super(Bot_template, self).__init__(name, self.original_deck, hero)
     
     ''' This should return unique id of AI that consists of its name and version'''
     def get_id(self):
@@ -34,7 +34,7 @@ class Bot_template(Player):
     
     '''
     Choose a list of cards to mulligan.
-    I should return the list of the cards you want to discard.
+    It should return the list of the cards you want to discard.
     This is called only before the first turn of each game.
     If you leave it unchanged, it will choose randomly.
     '''
