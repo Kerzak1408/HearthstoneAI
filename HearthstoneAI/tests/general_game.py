@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 global __last_turn__
+import pickle
 import sys, inspect; sys.path.append("..")
 import random
 import zipfile
@@ -18,8 +19,11 @@ from hearthstone.enums import Zone, Rarity
 from fireplace.dsl.selector import CURRENT_HEALTH, FRIENDLY_HERO, ENEMY_MINIONS,\
     FRIENDLY_MINIONS, CONTROLLED_BY, Selector, IN_HAND
 from AI.bots import *
+from AI.bots.q_learner import *
 from fireplace.card import Spell, Secret, Weapon, HeroPower
 from _datetime import date, datetime
+from pybrain.tools.customxml import NetworkWriter
+from pybrain.tools.customxml import NetworkReader
 
 ''' Following attributes will only be applied if no command prompt arguments were given. '''
 ''' !!! AIs to be used !!! '''
@@ -33,8 +37,12 @@ NUM_GAMES = 1
 ''' Whether to clear result file before the first simulation. '''
 CLEAR_RESULTS = False
 
+path_to_result = os.path.join(os.path.dirname(os.getcwd()),"game_results","results_summary.csv")
+
 player1 = None
 player2 = None
+
+neural_net = None
 
 # leave unchanged
 REPLAY_JSON_PATH = 'replay.json'
@@ -72,6 +80,11 @@ def play_full_game(my_json, game, csv_writer):
                 "Play card"
                 card = turn[1]
                 target = turn[2]
+                if (card.name == "Abusive Sergeant" and target == None):
+                    print(card.name)
+                    print(card.targets)
+                    print(player.field)
+                    print(player.opponent.field)
                 __last_turn__ = [card,target,turn_type]
                 if card.choose_cards:
                     card = random.choice(card.choose_cards)
@@ -119,6 +132,7 @@ def test_full_game(ai_1_id, deck_1_id, ai_2_id, deck_2_id, clear_results):
     global player1
     global player2
     global my_json
+    global neural_net
     
     player1 = get_instance_by_name(ai_1_id, deck_1_id)
     player2 = get_instance_by_name(ai_2_id, deck_2_id)
@@ -154,6 +168,29 @@ def test_full_game(ai_1_id, deck_1_id, ai_2_id, deck_2_id, clear_results):
         play_full_game(my_json, game, csv_writer)
         
     except GameOver:
+        win_reward = 0
+        if (player1.__class__ is Q_learner):
+            if (player1.hero.health > 0):
+                reward = win_reward
+            else:
+                reward = 0
+            player1.update_neural_network(player1.previous_state, player1.previous_q_value, player1.get_state(), player1.previous_action, reward)
+            net = player1.neural_network
+#            path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
+#            NetworkWriter.writeToFile(net, path)
+            neural_net = net
+            
+        if (player2.__class__ is Q_learner):
+            if (player2.hero.health > 0):
+                reward = win_reward
+            else:
+                reward = 0
+            player2.update_neural_network(player2.previous_state, player2.previous_q_value, player2.get_state(), player2.previous_action, reward)
+            net = player2.neural_network
+#            path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
+#            NetworkWriter.writeToFile(net, path)
+            neural_net = net
+            
         #LAST TURN
         if (__last_turn__[1] != None):
             hashmap = get_hash_map(game, player1, player2, __last_turn__[2], __last_turn__[0].entity_id,__last_turn__[0], __last_turn__[1], __last_turn__[0])
@@ -176,7 +213,7 @@ def test_full_game(ai_1_id, deck_1_id, ai_2_id, deck_2_id, clear_results):
         my_zip_file = zipfile.ZipFile(path_to_replay, mode='w')
         my_zip_file.write(REPLAY_JSON_PATH)
         
-        path_to_result = os.path.join(os.path.dirname(os.getcwd()),"game_results","results_summary.csv")
+        
        
         if (clear_results):
             csv_result_file = open(path_to_result,"w")
@@ -191,7 +228,8 @@ def test_full_game(ai_1_id, deck_1_id, ai_2_id, deck_2_id, clear_results):
         my_zip_file.close()
         
         set_attributes(attributes)
-
+    except:
+        print ("UNEXPECTED ERROR:", sys.exc_info())
 '''
 Returns json that is used for storing result attributes- date, num of games today, num of random decks...
 If date isn t equal to the current date, change it and set attributes to default values.
@@ -223,6 +261,7 @@ def set_attributes(json_content):
 
 ''' Returns an instance of the AI specified by its id and id of the deck used. '''
 def get_instance_by_name(ai_id, deck_id):
+    global neural_net
     result = None
     for module_name in globals():
         module = globals()[module_name]
@@ -232,16 +271,24 @@ def get_instance_by_name(ai_id, deck_id):
             if (len(splitted_path) > 1 and splitted_path[0] == "AI" and splitted_path[1] == "bots"):
                 for (class_name,class_dynamic) in inspect.getmembers(module):
                     if (class_name == ai_id):
-                        result = class_dynamic(ai_id, deck_id)
+                        if (class_name == "Q_learner" or class_name == "Q_learner_makro" or class_name == "Q_learner_super_makro"):
+                            result = class_dynamic(ai_id, deck_id, neural_net)
+                        else:
+                            result = class_dynamic(ai_id, deck_id)
     return result
 
 def main():
+    global player1
+    global player2
+    
     global AI_1_ID
     global DECK_1_ID
     global AI_2_ID
     global DECK_2_ID
     global NUM_GAMES
     global CLEAR_RESULTS
+    global path_to_result
+    global neural_net
     
     ai_1_id = AI_1_ID
     deck_1_id = DECK_1_ID
@@ -262,6 +309,13 @@ def main():
         sixth_arg = sys.argv[6]
         if (sixth_arg == "T"):
             clear_results = True
+        elif (sixth_arg == "O"):
+            clear_results = True
+            path_to_result = os.path.join(os.path.dirname(os.getcwd()),'game_results',ai_1_id + '(' + deck_1_id
+                                          + ')_' + ai_2_id + '(' + deck_2_id + ').csv')
+        else:
+            clear_results = True
+            path_to_result = os.path.join(os.path.dirname(os.getcwd()),'game_results',sixth_arg)
 
     if (len(sys.argv) <= 5):
         print("!!! WARNING: Wrong number of arguments. Default values were used. !!!")
@@ -274,7 +328,21 @@ def main():
                 test_full_game(ai_1_id,deck_1_id,ai_2_id,deck_2_id, clear_results)
             else:
                 test_full_game(ai_1_id,deck_1_id,ai_2_id,deck_2_id, False)
-            
+    
+    os.path.join(os.getcwd())
+    
+    if (player1.__class__ is Q_learner):
+        net = player1.neural_network
+        path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
+        NetworkWriter.writeToFile(net, path)
+        neural_net = net
+
+    if (player2.__class__ is Q_learner):
+        net = player2.neural_network
+        path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
+        NetworkWriter.writeToFile(net, path)
+        neural_net = net
+        
 if __name__ == "__main__":
     main()
 

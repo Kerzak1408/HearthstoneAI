@@ -274,6 +274,7 @@ def get_field_names_of_result():
     result.append("Player_2_id")
     result.append("Player_2_deck_id")
     result.append("Player_2_final_hp")
+    result.append("Coin")
     result.append("Final_turn")
     result.append("Winner")
     return result
@@ -287,10 +288,14 @@ def get_result_of_game(game):
     result["Player_2_id"] = game.player2.get_id()
     result["Player_2_deck_id"] = game.player2.get_deck_id()
     result["Player_2_final_hp"] = game.player2.hero.health
+    if (game.player1.first_player):
+        result["Coin"] = game.player2.get_id()
+    else:
+        result["Coin"] = game.player1.get_id()
     result["Final_turn"] = game.turn
     if (game.player1.hero.health < 1):
         if (game.player2.hero.health < 1):
-            winner = "None"
+            winner = "Draw"
         else:
             winner = game.player2.get_id()
     else:
@@ -522,7 +527,19 @@ def has_specific_cost_card(cards, cost):
         if (card.cost == cost):
             return True
     return False
-  
+
+def has_playable_card_of_max_cost(player,max_cost):
+    for card in player.hand:
+        if (card.is_playable() and card.cost <= max_cost):
+            return True
+    return False
+
+def can_any_character_attack_hero(player):
+    for character in player.characters:
+        if (character.can_attack(player.opponent.hero)):
+            return True
+    return False
+
   
 """
 cards - list of cards
