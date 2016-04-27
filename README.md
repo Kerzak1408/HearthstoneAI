@@ -8,6 +8,7 @@
   * Face hunter
   * Malygos freeze mage
   * Secret paladin
+  * Q learner with neural network
 
 ## Requirements
   * Python 3.5+
@@ -71,3 +72,6 @@
   1. Secret paladin implemented
     * tries to have predominance on the field == primary destroys minions
   2. Taunt an Divine shield are now visible in replays
+* 27. 04. 2016
+  1. Q_learning with neural networks
+    * working but in phase of win_rate optimization
