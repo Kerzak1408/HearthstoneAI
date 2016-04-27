@@ -7,6 +7,7 @@
   * Random bot
   * Face hunter
   * Malygos freeze mage
+  * Secret paladin
 
 ## Requirements
   * Python 3.5+
@@ -66,3 +67,7 @@
   4. Results summary
     * You can add "T" as a 6th argument, if you want to clear results_summary.csv file before the next simulation
     * Column "Winner" added to results_summary.csv file
+* 13. 04. 2016
+  1. Secret paladin implemented
+    * tries to have predominance on the field == primary destroys minions
+  2. Taunt an Divine shield are now visible in replays
