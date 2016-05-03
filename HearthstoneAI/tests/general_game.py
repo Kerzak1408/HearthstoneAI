@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import numpy
 
 global __last_turn__
 import pickle
@@ -20,6 +21,8 @@ from fireplace.dsl.selector import CURRENT_HEALTH, FRIENDLY_HERO, ENEMY_MINIONS,
     FRIENDLY_MINIONS, CONTROLLED_BY, Selector, IN_HAND
 from AI.bots import *
 from AI.bots.q_learner import *
+from AI.bots.q_learner_super_makro import *
+from AI.bots.q_learner_table import *
 from fireplace.card import Spell, Secret, Weapon, HeroPower
 from _datetime import date, datetime
 from pybrain.tools.customxml import NetworkWriter
@@ -43,6 +46,7 @@ player1 = None
 player2 = None
 
 neural_net = None
+table = None
 
 # leave unchanged
 REPLAY_JSON_PATH = 'replay.json'
@@ -133,6 +137,7 @@ def test_full_game(ai_1_id, deck_1_id, ai_2_id, deck_2_id, clear_results):
     global player2
     global my_json
     global neural_net
+    global table
     
     player1 = get_instance_by_name(ai_1_id, deck_1_id)
     player2 = get_instance_by_name(ai_2_id, deck_2_id)
@@ -169,7 +174,7 @@ def test_full_game(ai_1_id, deck_1_id, ai_2_id, deck_2_id, clear_results):
         
     except GameOver:
         win_reward = 0
-        if (player1.__class__ is Q_learner):
+        if (player1.__class__ is Q_learner_super_makro):
             if (player1.hero.health > 0):
                 reward = win_reward
             else:
@@ -180,7 +185,7 @@ def test_full_game(ai_1_id, deck_1_id, ai_2_id, deck_2_id, clear_results):
 #            NetworkWriter.writeToFile(net, path)
             neural_net = net
             
-        if (player2.__class__ is Q_learner):
+        if (player2.__class__ is Q_learner_super_makro):
             if (player2.hero.health > 0):
                 reward = win_reward
             else:
@@ -190,6 +195,22 @@ def test_full_game(ai_1_id, deck_1_id, ai_2_id, deck_2_id, clear_results):
 #            path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
 #            NetworkWriter.writeToFile(net, path)
             neural_net = net
+            
+        if (player1.__class__ is Q_learner_table):
+            if (player1.hero.health > 0):
+                reward = 0
+            else:
+                reward = 0
+            player1.update_table(player1.previous_state, player1.get_state(), player1.previous_action, reward)
+            table = player1.table
+            
+        if (player2.__class__ is Q_learner_table):
+            if (player2.hero.health > 0):
+                reward = 0
+            else:
+                reward = 0
+            player2.update_table(player2.previous_state, player2.previous_q_value, player2.get_state(), player2.previous_action, reward)
+            table = player2.table
             
         #LAST TURN
         if (__last_turn__[1] != None):
@@ -271,8 +292,11 @@ def get_instance_by_name(ai_id, deck_id):
             if (len(splitted_path) > 1 and splitted_path[0] == "AI" and splitted_path[1] == "bots"):
                 for (class_name,class_dynamic) in inspect.getmembers(module):
                     if (class_name == ai_id):
-                        if (class_name == "Q_learner" or class_name == "Q_learner_makro" or class_name == "Q_learner_super_makro"):
+                        if (class_name == "Q_learner" or class_name == "Q_learner_makro" or class_name == "Q_learner_super_makro"
+                            or class_name == "Q_learner_value"):
                             result = class_dynamic(ai_id, deck_id, neural_net)
+                        elif (class_name == "Q_learner_table"):
+                            result = class_dynamic(ai_id, deck_id, table)
                         else:
                             result = class_dynamic(ai_id, deck_id)
     return result
@@ -290,6 +314,8 @@ def main():
     global path_to_result
     global neural_net
     
+    switch = False
+    
     ai_1_id = AI_1_ID
     deck_1_id = DECK_1_ID
     ai_2_id = AI_2_ID
@@ -305,6 +331,9 @@ def main():
         deck_2_id = sys.argv[4]
         numgames = sys.argv[5]
         
+        if (ai_2_id == "switch"):
+            switch = True
+            
     if (len(sys.argv) > 6):
         sixth_arg = sys.argv[6]
         if (sixth_arg == "T"):
@@ -324,6 +353,16 @@ def main():
             sys.stderr.write("Usage: %s [NUMGAMES]\n" % (sys.argv[0]))
             exit(1)
     for i in range(int(numgames)):
+            if (switch):
+                if (i % 3 == 0):
+                    ai_2_id = "Face_hunter"
+                    deck_2_id = "hunter_face"
+                elif (i % 3 == 1):
+                    ai_2_id = "Secret_paladin"
+                    deck_2_id = "paladin_secret"
+                else:
+                    ai_2_id = "Malygos_freeze_mage"
+                    deck_2_id = "mage_malygos_freeze"
             if (i == 0):
                 test_full_game(ai_1_id,deck_1_id,ai_2_id,deck_2_id, clear_results)
             else:
@@ -331,17 +370,27 @@ def main():
     
     os.path.join(os.getcwd())
     
-    if (player1.__class__ is Q_learner):
+    if (player1.__class__ is Q_learner_super_makro):
         net = player1.neural_network
         path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
         NetworkWriter.writeToFile(net, path)
         neural_net = net
 
-    if (player2.__class__ is Q_learner):
+    if (player2.__class__ is Q_learner_super_makro):
         net = player2.neural_network
         path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
         NetworkWriter.writeToFile(net, path)
         neural_net = net
+        
+    if (player1.__class__ is Q_learner_table):
+        table = player1.table
+        path = os.path.join(os.path.dirname(os.getcwd()), 'table.txt')
+        numpy.save(path, table)
+        
+    if (player2.__class__ is Q_learner_table):
+        table = player2.table
+        path = os.path.join(os.path.dirname(os.getcwd()), 'table.txt')
+        numpy.save(path, table)
         
 if __name__ == "__main__":
     main()

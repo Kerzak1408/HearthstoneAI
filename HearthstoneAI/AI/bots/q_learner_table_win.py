@@ -1,5 +1,7 @@
 import random
 import pybrain
+import numpy
+import sys
 from pybrain.supervised.trainers import BackpropTrainer
 from pybrain.tools.shortcuts import buildNetwork
 from AI.utils import *
@@ -9,7 +11,7 @@ from pybrain.tools.customxml import NetworkWriter
 from pybrain.tools.customxml import NetworkReader
 from fireplace.card import Minion, HeroPower
 
-class Q_learner_super_makro(Player):
+class Q_learner_table(Player):
     
     ''' Current version of the bot. Should be updated after significant changes. '''
     version = 1
@@ -19,31 +21,34 @@ class Q_learner_super_makro(Player):
     
     ''' Name of the file containing deck. The file must be located in HearthstoneAI\AI\decks '''
     deck_id = None
-    
-    neural_network = None
+    states_num = 691200
+    actions_num = 168
+    table = None
     learning_rate = 0.8
     discount_factor = 0.8
-    states_and_actions_num = 11 + 1 + 150 + 5 + 5 + 5 + 1
     previous_q_value = None
     previous_action = None
     previous_state = None
     previous_opp_hero_hp = 30
     previous_my_hero_hp = 30
+    previous_opp_hero_armor = 0
+    previous_my_hero_armor = 0
+    previous_turn = []
+    old_value = 0
     
     sorted_original_deck = None
     
     ''' Change Bot_template to your class name '''
-    def __init__(self, name, deck_id, neural_net):
-        if (neural_net == None):
-            path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
-            self.neural_network = NetworkReader.readFrom(path)
+    def __init__(self, name, deck_id, existing_table):
+        if (existing_table == None):
+            self.table = numpy.zeros((self.states_num,self.actions_num))
         else:
-            self.neural_network = neural_net
+            self.table = existing_table
       
         hero = get_hero(deck_id)
         self.deck_id = deck_id
         self.original_deck = get_deck_by_id(deck_id)
-        super(Q_learner_super_makro, self).__init__(name, self.original_deck, hero)
+        super(Q_learner_table, self).__init__(name, self.original_deck, hero)
     
     ''' This should return unique id of AI that consists of its name and version'''
     def get_id(self):
@@ -79,12 +84,10 @@ class Q_learner_super_makro(Player):
     def get_next_turn(self, game):
         state = self.get_state()
         [turn, q_value, action] = self.get_best_action(state)
-        if (self.previous_q_value != None):
-            reward = self.get_reward(self.previous_turn)
-            self.update_neural_network(self.previous_state, self.previous_q_value, state, self.previous_action, reward)
+        reward = self.get_reward(self.previous_turn)
+        self.update_table(self.previous_state, state, self.previous_action, reward)
         self.previous_action = action
         self.previous_state = state
-        self.previous_q_value = q_value
         self.previous_opp_hero_hp = self.opponent.hero.health
         self.previous_opp_hero_armor = self.opponent.hero.armor
         self.previous_my_hero_hp = self.hero.health
@@ -111,14 +114,36 @@ class Q_learner_super_makro(Player):
         if (my_hero_damage_done > 0):
             result = result - 10
         
-        return result*1
+        return result
+    
+    def get_character_value(self, character):
+        value = 1
+        value = value + character.atk * 10
+        value = value + character.health
+        if (character.__class__ is Minion):
+            if (character.taunt):
+                value = value + 5
+            if (character.divine_shield):
+                value = value + 10
+        return value
     
     def get_state(self):
-        state = [0]*11
+        state = 0
+        
+        mana_vector = [0]*11
+        maxes = [9,5,5,4,3,2,1,1,1,1,1]
+        add_to_index = self.states_num
+        mana_vector[0] = self.mana - 1
         #mana
-        state[0] = self.mana
         for card in self.hand:
-            state[card.cost] = state[card.cost] + 1
+            if (card.cost > 0 and card.cost < 11 and mana_vector[card.cost] < maxes[card.cost]):
+                mana_vector[card.cost] = mana_vector[card.cost] + 1
+           
+        for i in range(0,len(mana_vector)):
+            divisor = maxes[i] + 1
+            to_be_added = mana_vector[i] * add_to_index / divisor
+            add_to_index = add_to_index / divisor
+            state = state + to_be_added
         
         return state
     
@@ -130,14 +155,14 @@ class Q_learner_super_makro(Player):
     
     def get_best_action(self, state):
         best_action = self.get_action(None, None)
-        q_max = self.neural_network.activate(state + best_action)
+        q_max = self.table[state,best_action]
         best_turn = []
         for card in self.hand:
             if (card.is_playable()):
                 if (card.has_target()):
                     for target in card.targets:
                         action = self.get_action(card, target)
-                        q_candidate = self.neural_network.activate(state + action)
+                        q_candidate = self.table[state,action]
                         if (q_candidate > q_max):
                             best_action = action
                             q_max = q_candidate
@@ -146,7 +171,7 @@ class Q_learner_super_makro(Player):
                             best_turn = get_turn_item_play_card(card,target)
                 else:
                     action = self.get_action(card, None)
-                    q_candidate = self.neural_network.activate(state + action)
+                    q_candidate = self.table[state,action]
                     if (q_candidate > q_max):
                         best_action = action
                         q_max = q_candidate
@@ -158,14 +183,14 @@ class Q_learner_super_makro(Player):
             if (self.hero.power.has_target()):
                 for target in self.hero.power.targets:
                     action = self.get_action(self.hero.power, target)
-                    q_candidate = self.neural_network.activate(state + action)
+                    q_candidate = self.table[state,action]
                     if (q_candidate > q_max):
                         best_action = action
                         q_max = q_candidate
                         best_turn = get_turn_item_hero_power(self.hero.power,target)
             else:
                 action = self.get_action(self.hero.power, None)
-                q_candidate = self.neural_network.activate(state + action)
+                q_candidate = self.table[state,action]
                 if (q_candidate > q_max):
                     best_action = action
                     q_max = q_candidate
@@ -175,7 +200,7 @@ class Q_learner_super_makro(Player):
             for target in character.targets:
                 if (character.can_attack(target)):
                     action = self.get_action(character, target)
-                    q_candidate = self.neural_network.activate(state + action)
+                    q_candidate = self.table[state,action]
                     if (q_candidate > q_max):
                         best_action = action
                         q_max = q_candidate
@@ -184,106 +209,106 @@ class Q_learner_super_makro(Player):
         return [best_turn,q_max, best_action]
     
     def get_action(self, my_entity, target_character):
-        action = [0] * (1 + 150 + 5 + 5 + 5 + 1)
+        result = -1
         cards_actions_num = 150
         if (my_entity == None and target_character == None):
-            return action
+            return 0
         elif (my_entity in self.hand):
             # playing a card
             cost = my_entity.cost + 1
             if (not(my_entity in self.original_deck)):
                 # unknown card - probably The Coin
-                action[0] = 1
+                return 167
             else:
                 index = self.original_deck.index(my_entity) + 1
                 if (target_character == None):
                     # no target
-                    action[index] = 1
+                    return index
                 elif (target_character.__class__ is Minion):
                     #targetting a minion
                     if (target_character.controller == self):
                         # targetting own minion
-                        action[index + 30] = 1
+                        return index + 30
                     else:
                         # targetting enemy minion
-                        action[index + 60] = 1
+                        return index + 60
                 elif (target_character.__class__ is Hero):
                     if (target_character.controller == self):
                         # targetting own hero
-                        action[index + 90] = 1
+                        return index + 90
                     else:
                         # targetting enemy hero
-                        action[index + 120] = 1
+                        return index + 120
         elif (my_entity.__class__ is Minion):            
             
             if (target_character.__class__ is Hero):
                 # attacking a hero
-                action[cards_actions_num + 1] = 1
+                return cards_actions_num + 1
             elif (target_character.__class__ is Minion):
                 # attacking a minion
                 if (target_character.atk >= my_entity.health and not(my_entity.divine_shield)):
                     # my character is going to die
                     if (target_character.health < my_entity.atk and not(target_character.divine_shield)):
                         # both characters are going to die
-                        action[cards_actions_num + 2] = 1
+                        return cards_actions_num + 2
                     else:
                         # I am going to lose character, my opponent is not
-                        action[cards_actions_num + 3] = 1
+                        return cards_actions_num + 3
                 else:
                     # my character is going to survive
                     if (target_character.health < my_entity.atk and not(target_character.divine_shield)):
                         # My opponent is going to lose character but not me
-                        action[cards_actions_num + 4] = 1
+                        return cards_actions_num + 4
                     else:
                         # Both character are going to survive
-                        action[cards_actions_num + 5] = 1
+                        return cards_actions_num + 5
         elif (my_entity.__class__ is Hero):
             if  (target_character.__class__ is Hero):
                 # attacking a hero
-                action[cards_actions_num + 6] = 1
+                return cards_actions_num + 6
             elif (target_character.__class__ is Minion):
                 # attacking a minion
                 if (target_character.atk >= my_entity.health):
                     # my hero is going to die
                     if (target_character.health < my_entity.atk and not(target_character.divine_shield)):
                         # both my hero and the target are going to die
-                        action[cards_actions_num + 7] = 1
+                        return cards_actions_num + 7
                     else:
                         # my hero is going to die, the target is not
-                        action[cards_actions_num + 8] = 1
+                        return cards_actions_num + 8
                 else:
                     # my hero is going to survive
                     if (target_character.health < my_entity.atk and not(target_character.divine_shield)):
                         # My opponent is going to lose character but not me
-                        action[cards_actions_num + 9] = 1
+                        return cards_actions_num + 9
                     else:
                         # Both character are going to survive
-                        action[cards_actions_num + 10] = 1
+                        return cards_actions_num + 10
         
         elif (my_entity.__class__ is HeroPower):
             if (target_character == None):
                 # no target
-                action[cards_actions_num + 11] = 1
+                return cards_actions_num + 11
             elif (target_character.__class__ is Hero):
                 # target is Hero
                 if (target_character.controller == self):
                     # targetting my hero
-                    action[cards_actions_num + 12] = 1
+                    return cards_actions_num + 12
                 else:
                     #targetting opp hero
-                    action[cards_actions_num + 13] = 1
+                    return cards_actions_num + 13
             elif (target_character.__class__ is Minion):
                 if (target_character.controller == self):
                     # targetting my hero
-                    action[cards_actions_num + 14] = 1
+                    return cards_actions_num + 14
                 else:
                     #targetting opp hero
-                    action[cards_actions_num + 15] = 1
+                    return cards_actions_num + 15
         else:
             # only unexpected actions
             print ("Unexpected action. MY_ENTITY: " + str(my_entity) + " TARGET: " + str(target_character))
-            action[cards_actions_num + 16] = 1
-        return action
+            return cards_actions_num + 16
+        return -1
             
     
     def get_best_target(self, card):
@@ -301,26 +326,13 @@ class Q_learner_super_makro(Player):
             target = None
         return target
     
-    def update_neural_network(self, old_state, old_value, new_state,action, reward):
-       desired_value = old_value + self.learning_rate * (reward + self.discount_factor * self.get_best_action(new_state)[1] - old_value)
-       ds = self.create_dataset(old_state, action, desired_value)
-       
-       trainer = BackpropTrainer(self.neural_network,ds)
-       print("OLD: " + str(self.neural_network.activate(old_state + action)))
-       trainer.train()
-       print("NEW: " + str(self.neural_network.activate(old_state + action)))
-       print("DESIRED: " + str(desired_value))
+    def update_table(self, old_state, new_state,action, reward):
+        if (old_state != None):
+            old_value = self.table[old_state, action]
+            desired_value = old_value + self.learning_rate * (reward + self.discount_factor * self.get_best_action(new_state)[1] - old_value)
+           
+            self.table[old_state,action] = desired_value
     
-    def create_dataset(self, state, action, desired_value):
-        ds = SupervisedDataSet(self.states_and_actions_num,1)
-        for a in range(0,len(action)):
-            old_action = [0] * len(action)
-            old_action[a] = 1
-            if (old_action != action):
-                ds.addSample(state + old_action, self.neural_network.activate(state + old_action))
-            ds.addSample(state + action, desired_value)
-        
-        return ds
         
         
         
