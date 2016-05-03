@@ -9,6 +9,7 @@
   * Malygos freeze mage
   * Secret paladin
   * Q learner with neural network
+  * Q learner with table
 
 ## Requirements
   * Python 3.5+
