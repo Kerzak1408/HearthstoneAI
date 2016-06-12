@@ -9,6 +9,7 @@
   * Malygos freeze mage
   * Secret paladin
   * Q learner with neural network
+  * Q learner with table
 
 ## Requirements
   * Python 3.5+
@@ -75,3 +76,5 @@
 * 27. 04. 2016
   1. Q_learning with neural networks
     * working but in phase of win_rate optimization
+* 04. 05. 2016
+  1. Table Q-learner implemented
