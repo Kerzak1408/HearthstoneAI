@@ -114,7 +114,7 @@ def test_bouncing_blade_commanding_shout():
 
 
 def test_crackle():
-	game = prepare_game(SHAMAN, SHAMAN)
+	game = prepare_game()
 	crackle = game.player1.give("GVG_038")
 	crackle.play(target=game.player2.hero)
 	assert game.player2.hero.health in (24, 25, 26, 27)
@@ -122,7 +122,7 @@ def test_crackle():
 
 
 def test_crackle_malygos():
-	game = prepare_game(SHAMAN, SHAMAN)
+	game = prepare_game()
 	malygos = game.player1.give("EX1_563")
 	malygos.play()
 	game.end_turn(); game.end_turn()
@@ -285,7 +285,7 @@ def test_fel_reaver():
 
 
 def test_floating_watcher():
-	game = prepare_game(WARLOCK, WARLOCK)
+	game = prepare_game(CardClass.WARLOCK, CardClass.WARLOCK)
 	watcher = game.player1.give("GVG_100")
 	watcher.play()
 	assert watcher.atk == watcher.health == 4
@@ -589,7 +589,7 @@ def test_lightbomb():
 
 
 def test_malganis():
-	game = prepare_game(HUNTER, HUNTER)
+	game = prepare_game(CardClass.HUNTER, CardClass.HUNTER)
 	voidwalker = game.player1.give("CS2_065")
 	voidwalker.play()
 	malganis = game.player1.give("GVG_021")
@@ -830,10 +830,10 @@ def test_recombobulator():
 	wisp.play()
 	recom = game.player1.give("GVG_108")
 	recom.play(target=wisp)
-	recom.destroy()
 
 	assert wisp not in game.player1.field
 	assert game.player1.field[0].cost == 0
+	assert game.player1.field[1] == recom
 
 
 def test_recombobulator_molten_giant():
@@ -841,7 +841,7 @@ def test_recombobulator_molten_giant():
 	game.player1.hero.set_current_health(15)
 
 	molten = game.player1.give("EX1_620")
-	assert molten.cost == 5
+	assert molten.cost == 25 - 15
 	molten.play()
 	game.end_turn(); game.end_turn()
 
@@ -850,7 +850,7 @@ def test_recombobulator_molten_giant():
 	recom.destroy()
 
 	assert molten not in game.player1.field
-	assert game.player1.field[0].cost == 20
+	assert game.player1.field[0].cost == molten.cost
 
 
 def test_reversing_switch():
@@ -890,7 +890,7 @@ def test_sabotage():
 
 
 def test_siege_engine():
-	game = prepare_game(WARRIOR, WARRIOR)
+	game = prepare_game(CardClass.WARRIOR, CardClass.WARRIOR)
 	engine = game.player1.give("GVG_086")
 	engine.play()
 	assert engine.atk == 5
@@ -1071,7 +1071,7 @@ def test_voljin_stealth():
 
 
 def test_wee_spellstopper():
-	game = prepare_game(MAGE, MAGE)
+	game = prepare_game(CardClass.MAGE, CardClass.MAGE)
 	outside = game.player1.give(WISP)
 	outside.play(index=0)
 	left = game.player1.give(TARGET_DUMMY)

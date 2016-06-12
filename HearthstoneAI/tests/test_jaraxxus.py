@@ -11,7 +11,7 @@ INFERNO_TOKEN = "EX1_tk34"
 
 
 def test_jaraxxus():
-	game = prepare_game(WARRIOR, WARRIOR)
+	game = prepare_game(CardClass.WARRIOR, CardClass.WARRIOR)
 	game.player1.hero.power.use()
 	game.player1.give(LIGHTS_JUSTICE).play()
 	assert game.player1.weapon.id == LIGHTS_JUSTICE
@@ -55,11 +55,11 @@ def test_jaraxxus_molten_giant():
 	molten = game.player1.give("EX1_620")
 	jaraxxus.play()
 	assert game.player1.hero.health == 15
-	assert molten.cost == 20
+	assert molten.cost == 25
 
 
 def test_jaraxxus_mirror_entity():
-	game = prepare_game(MAGE, MAGE)
+	game = prepare_game()
 	mirror = game.player1.give("EX1_294")
 	mirror.play()
 	game.end_turn()
@@ -68,7 +68,6 @@ def test_jaraxxus_mirror_entity():
 	jaraxxus.play()
 	assert not game.player1.secrets
 	assert game.player2.hero.id == LORD_JARAXXUS_HERO
-	assert game.player1.hero.id == MAGE
 	assert len(game.player1.field) == 1
 	assert game.player1.field[0].id == LORD_JARAXXUS
 

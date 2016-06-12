@@ -1,14 +1,8 @@
 import random
-import pybrain
 import numpy
 import sys
-from pybrain.supervised.trainers import BackpropTrainer
-from pybrain.tools.shortcuts import buildNetwork
 from AI.utils import *
 from fireplace.utils import *
-from pybrain.datasets.supervised import SupervisedDataSet
-from pybrain.tools.customxml import NetworkWriter
-from pybrain.tools.customxml import NetworkReader
 from fireplace.card import Minion, HeroPower
 
 class Q_learner_table(Player):
@@ -24,8 +18,8 @@ class Q_learner_table(Player):
     states_num = 691200
     actions_num = 168
     table = None
-    learning_rate = 0.8
-    discount_factor = 0.8
+    learning_rate = 0.1
+    discount_factor = 0.01
     previous_q_value = None
     previous_action = None
     previous_state = None
@@ -35,6 +29,7 @@ class Q_learner_table(Player):
     previous_my_hero_armor = 0
     previous_turn = []
     old_value = 0
+    was_necessary_last = False
     
     sorted_original_deck = None
     
@@ -93,12 +88,13 @@ class Q_learner_table(Player):
         self.previous_my_hero_hp = self.hero.health
         self.previous_my_hero_armor = self.hero.armor
         self.previous_turn = turn
+        self.was_necessary_last = not has_playable_card_of_max_cost(self, self.mana) and not can_any_character_attack_hero(self)
         return turn
     
     def get_reward(self, turn):
         result = 0
         if (turn == []):
-            if (has_playable_card_of_max_cost(self, self.mana) or can_any_character_attack_hero(self)):
+            if (not self.was_necessary_last):
                 result = result - 10
             else:
                 result = result + (self.used_mana/self.max_mana) * 10
@@ -113,13 +109,15 @@ class Q_learner_table(Player):
         my_hero_damage_done = self.previous_my_hero_armor + self.previous_my_hero_hp - self.hero.health - self.hero.armor
         if (my_hero_damage_done > 0):
             result = result - 10
+        for character in self.characters:
+            result = result + character.atk
         
         return result
     
     def get_character_value(self, character):
         value = 1
         value = value + character.atk * 10
-        value = value + character.health
+        value = value + character.health 
         if (character.__class__ is Minion):
             if (character.taunt):
                 value = value + 5

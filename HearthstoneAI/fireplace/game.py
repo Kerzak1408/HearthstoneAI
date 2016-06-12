@@ -2,7 +2,7 @@ import random
 import time
 from calendar import timegm
 from itertools import chain
-from hearthstone.enums import CardType, PlayState, PowSubType, State, Step, Zone
+from hearthstone.enums import CardType, PlayState, BlockType, State, Step, Zone
 from .actions import Attack, BeginTurn, Death, EndTurn, EventListener, Play
 from .card import THE_COIN
 from .entity import Entity
@@ -79,15 +79,15 @@ class BaseGame(Entity):
 
 	def action_start(self, type, source, index, target):
 		self.manager.action_start(type, source, index, target)
-		if type != PowSubType.PLAY:
+		if type != BlockType.PLAY:
 			self._action_stack += 1
 
 	def action_end(self, type, source):
 		self.manager.action_end(type, source)
-		if type != PowSubType.PLAY:
+		if type != BlockType.PLAY:
 			self._action_stack -= 1
 		if not self._action_stack:
-#			self.log("Empty stack, refreshing auras and processing deaths")
+			self.log("Empty stack, refreshing auras and processing deaths")
 			self.refresh_auras()
 			self.process_deaths()
 
@@ -101,25 +101,26 @@ class BaseGame(Entity):
 		return ret
 
 	def attack(self, source, target):
-		type = PowSubType.ATTACK
+		type = BlockType.ATTACK
 		actions = [Attack(source, target)]
 		return self.action_block(source, actions, type, target=target)
 
 	def joust(self, source, challenger, defender, actions):
-		type = PowSubType.JOUST
+		type = BlockType.JOUST
 		return self.action_block(source, actions, type, event_args=[challenger, defender])
 
 	def main_power(self, source, actions, target):
-		type = PowSubType.POWER
+		type = BlockType.POWER
 		return self.action_block(source, actions, type, target=target)
 
 	def play_card(self, card, target, index, choose):
-		type = PowSubType.PLAY
+		type = BlockType.PLAY
+		player = card.controller
 		actions = [Play(card, target, index, choose)]
-		return self.action_block(card, actions, type, index, target)
+		return self.action_block(player, actions, type, index, target)
 
 	def process_deaths(self):
-		type = PowSubType.DEATHS
+		type = BlockType.DEATHS
 		cards = []
 		for card in self.live_entities:
 			if card.to_be_destroyed:
@@ -139,7 +140,7 @@ class BaseGame(Entity):
 		"""
 		Perform actions as a result of an event listener (TRIGGER)
 		"""
-		type = PowSubType.TRIGGER
+		type = BlockType.TRIGGER
 		return self.action_block(source, actions, type, event_args=event_args)
 
 	def cheat_action(self, source, actions):
@@ -237,7 +238,11 @@ class BaseGame(Entity):
 
 		self.tick += 1
 
-	def prepare(self):
+	def setup(self):
+		self.log("Setting up game %r", self)
+		self.state = State.RUNNING
+		self.step = Step.BEGIN_DRAW
+		self.zone = Zone.PLAY
 		self.players[0].opponent = self.players[1]
 		self.players[1].opponent = self.players[0]
 		for player in self.players:
@@ -252,21 +257,17 @@ class BaseGame(Entity):
 
 		for player in self.players:
 			player.prepare_for_game()
+		self.manager.start_game()
 
 	def start(self):
-		self.log("Starting game %r", self)
-		self.state = State.RUNNING
-		self.step = Step.BEGIN_DRAW
-		self.zone = Zone.PLAY
-		self.prepare()
-		self.manager.start_game()
+		self.setup()
 		self.begin_turn(self.player1)
 
 	def end_turn(self):
 		return self.queue_actions(self, [EndTurn(self.current_player)])
 
 	def _end_turn(self):
-#		self.log("%s ends turn %i", self.current_player, self.turn)
+		self.log("%s ends turn %i", self.current_player, self.turn)
 		self.manager.step(self.next_step, Step.MAIN_CLEANUP)
 		self.current_player.temp_mana = 0
 		self.end_turn_cleanup()
@@ -288,7 +289,7 @@ class BaseGame(Entity):
 	def _begin_turn(self, player):
 		self.manager.step(self.next_step, Step.MAIN_READY)
 		self.turn += 1
-#		self.log("%s begins turn %i", player, self.turn)
+		self.log("%s begins turn %i", player, self.turn)
 		self.current_player = player
 		self.manager.step(self.next_step, Step.MAIN_START_TRIGGERS)
 		self.manager.step(self.next_step, Step.MAIN_START)
@@ -330,29 +331,31 @@ class CoinRules:
 		self.log("Tossing the coin... %s wins!", winner)
 		return winner, winner.opponent
 
-	def start(self):
-		super().start()
-		self.log("%s gets The Coin (%s)", self.player2, THE_COIN)
-		self.player2.give(THE_COIN)
+	def begin_turn(self, player):
+		if self.turn == 0:
+			self.log("%s gets The Coin (%s)", self.player2, THE_COIN)
+			self.player2.give(THE_COIN)
+		super().begin_turn(player)
 
 
 class MulliganRules:
 	"""
 	Performs a Mulligan phase when the Game starts.
-	Currently just a dummy phase.
+	Only begin the game after both Mulligans have been chosen.
 	"""
 
 	def start(self):
 		from .actions import MulliganChoice
-
+		self.setup()
 		self.next_step = Step.BEGIN_MULLIGAN
-		super().start()
-
 		self.log("Entering mulligan phase")
 		self.step, self.next_step = self.next_step, Step.MAIN_READY
 
 		for player in self.players:
-			self.queue_actions(self, [MulliganChoice(player)])
+			self.queue_actions(self, [MulliganChoice(player, callback=self.mulligan_done)])
+
+	def mulligan_done(self):
+		self.begin_turn(self.player1)
 
 
 class Game(MulliganRules, CoinRules, BaseGame):

@@ -1,17 +1,11 @@
 import random
-import pybrain
 import numpy
 import sys
-from pybrain.supervised.trainers import BackpropTrainer
-from pybrain.tools.shortcuts import buildNetwork
 from AI.utils import *
 from fireplace.utils import *
-from pybrain.datasets.supervised import SupervisedDataSet
-from pybrain.tools.customxml import NetworkWriter
-from pybrain.tools.customxml import NetworkReader
 from fireplace.card import Minion, HeroPower
 
-class Q_learner_table(Player):
+class Q_learner_table_win(Player):
     
     ''' Current version of the bot. Should be updated after significant changes. '''
     version = 1
@@ -21,7 +15,7 @@ class Q_learner_table(Player):
     
     ''' Name of the file containing deck. The file must be located in HearthstoneAI\AI\decks '''
     deck_id = None
-    states_num = 691200
+    states_num = 1
     actions_num = 168
     table = None
     learning_rate = 0.8
@@ -48,7 +42,7 @@ class Q_learner_table(Player):
         hero = get_hero(deck_id)
         self.deck_id = deck_id
         self.original_deck = get_deck_by_id(deck_id)
-        super(Q_learner_table, self).__init__(name, self.original_deck, hero)
+        super(Q_learner_table_win, self).__init__(name, self.original_deck, hero)
     
     ''' This should return unique id of AI that consists of its name and version'''
     def get_id(self):
@@ -113,6 +107,8 @@ class Q_learner_table(Player):
         my_hero_damage_done = self.previous_my_hero_armor + self.previous_my_hero_hp - self.hero.health - self.hero.armor
         if (my_hero_damage_done > 0):
             result = result - 10
+        for character in self.characters:
+            result = result + character.atk
         
         return result
     
@@ -130,21 +126,7 @@ class Q_learner_table(Player):
     def get_state(self):
         state = 0
         
-        mana_vector = [0]*11
-        maxes = [9,5,5,4,3,2,1,1,1,1,1]
-        add_to_index = self.states_num
-        mana_vector[0] = self.mana - 1
-        #mana
-        for card in self.hand:
-            if (card.cost > 0 and card.cost < 11 and mana_vector[card.cost] < maxes[card.cost]):
-                mana_vector[card.cost] = mana_vector[card.cost] + 1
-           
-        for i in range(0,len(mana_vector)):
-            divisor = maxes[i] + 1
-            to_be_added = mana_vector[i] * add_to_index / divisor
-            add_to_index = add_to_index / divisor
-            state = state + to_be_added
-        
+        mana_vector = [0]
         return state
     
     def get_int_from_bool(self, boolean_value):

@@ -25,6 +25,34 @@ def test_anubarak():
 	assert len(game.player1.hand) == 0
 
 
+def test_astral_communion():
+	game = prepare_game(game_class=Game)
+	game.player1.discard_hand()
+	astral = game.player1.give("AT_043")
+	game.player1.give(INNERVATE).play()
+	game.player1.give(INNERVATE).play()
+	for i in range(5):
+		game.player1.give(WISP)
+	assert game.player1.max_mana == 1
+	assert game.player1.mana == 5
+	astral.play()
+	assert not game.player1.hand
+	assert game.player1.mana == game.player1.max_mana == 10
+
+
+def test_astral_communion_full_mana():
+	game = prepare_game()
+	assert game.player1.mana == 10
+	astral = game.player1.give("AT_043")
+	for i in range(5):
+		game.player1.give(WISP)
+	astral.play()
+	assert len(game.player1.hand) == 1
+	assert game.player1.hand[0].id == "CS2_013t"
+	assert game.player1.max_mana == 10
+	assert game.player1.mana == 6
+
+
 def test_aviana():
 	game = prepare_game()
 	aviana = game.player1.give("AT_045")
@@ -33,20 +61,18 @@ def test_aviana():
 	deathwing = game.player1.give("NEW1_030")
 	assert deathwing.cost == 10
 	molten = game.player1.give("EX1_620")
-	assert molten.cost == 20
+	assert molten.cost == 25
 	game.player1.give(MOONFIRE).play(game.player1.hero)
-	assert molten.cost == 19
+	assert molten.cost == 25 - 1
 	aviana.play()
 	for minion in (wisp1, deathwing, molten):
 		assert minion.cost == 1
-
 	wisp2 = game.player2.give(WISP)
 	assert wisp2.cost == 0
-
 	aviana.destroy()
 	assert wisp1.cost == 0
 	assert deathwing.cost == 10
-	assert molten.cost == 19
+	assert molten.cost == 25 - 1
 
 
 def test_beneath_the_grounds():
@@ -91,6 +117,29 @@ def test_burgle():
 	assert game.player1.hand[1].type != CardType.HERO
 
 
+def test_dalaran_aspirant():
+	game = prepare_game(CardClass.ROGUE, CardClass.ROGUE)
+	aspirant = game.player1.give("AT_006")
+	aspirant.play()
+	assert aspirant.spellpower == game.player1.spellpower == 0
+	game.player1.hero.power.use()
+	assert aspirant.spellpower == game.player1.spellpower == 1
+	game.end_turn(); game.end_turn()
+
+	game.player1.hero.power.use()
+	assert aspirant.spellpower == game.player1.spellpower == 2
+	game.player1.give(MOONFIRE).play(target=game.player2.hero)
+	assert game.player2.hero.health == 30 - 3
+	game.end_turn()
+
+	# Steal the aspirant (HearthSim/hs-bugs#412)
+	game.player2.give(MIND_CONTROL).play(target=aspirant)
+	assert game.player1.spellpower == 0
+	assert aspirant.spellpower == game.player2.spellpower == 2
+	game.player2.give(MOONFIRE).play(target=game.player1.hero)
+	assert game.player1.hero.health == 30 - 3
+
+
 def test_dark_bargain():
 	game = prepare_game()
 	for i in range(3):
@@ -132,7 +181,7 @@ def test_demonfuse_sense_demons():
 
 
 def test_dragonhawk_rider():
-	game = prepare_game(WARRIOR, WARRIOR)
+	game = prepare_game(CardClass.WARRIOR, CardClass.WARRIOR)
 	rider = game.player1.give("AT_083")
 	game.player1.hero.power.use()
 	rider.play()
@@ -205,7 +254,7 @@ def test_enter_the_coliseum():
 
 
 def test_fencing_coach():
-	game = prepare_game(WARRIOR, WARRIOR)
+	game = prepare_game(CardClass.WARRIOR, CardClass.WARRIOR)
 	coach = game.player1.give("AT_115")
 	assert game.player1.hero.power.cost == 2
 	coach.play()
@@ -213,7 +262,7 @@ def test_fencing_coach():
 	game.end_turn(); game.end_turn()
 
 	assert game.player1.hero.power.cost == 0
-	game.player1.hero.power.activate()
+	game.player1.hero.power.use()
 	assert game.player1.hero.power.cost == 2
 
 
@@ -230,7 +279,7 @@ def test_fist_of_jaraxxus():
 
 
 def test_garrison_commander():
-	game = prepare_game(HUNTER, HUNTER)
+	game = prepare_game(CardClass.WARRIOR, CardClass.WARRIOR)
 	heropower = game.player1.hero.power
 	heropower.use()
 	assert not heropower.is_usable()
@@ -366,7 +415,6 @@ def test_lock_and_load():
 	game.player1.give(THE_COIN).play()
 	assert len(game.player1.hand) == 1
 	lockandload.play()
-	assert game.player1.hero.buffs
 	assert len(game.player1.hand) == 0
 	game.player1.give(THE_COIN).play()
 	assert len(game.player1.hand) == 1
@@ -377,7 +425,7 @@ def test_lock_and_load():
 
 
 def test_lowly_squire():
-	game = prepare_game(HUNTER, HUNTER)
+	game = prepare_game(CardClass.WARRIOR, CardClass.WARRIOR)
 	squire = game.player1.give("AT_082")
 	squire.play()
 	assert squire.atk == 1
@@ -388,6 +436,59 @@ def test_lowly_squire():
 	assert squire.atk == 2
 	game.player1.hero.power.use()
 	assert squire.atk == 3
+
+
+def test_master_of_ceremonies():
+	game = prepare_game()
+	master = game.player1.give("AT_117")
+	assert not master.powered_up
+	master.play()
+	assert master.atk == 4
+	assert master.health == 2
+
+	kobold = game.player1.give(KOBOLD_GEOMANCER)
+	kobold.play()
+	master2 = game.player1.give("AT_117")
+	assert master2.powered_up
+	master2.play()
+	assert master2.atk == 4 + 2
+	assert master2.health == 2 + 2
+
+
+def test_master_of_ceremonies_friendly_jungle_moonkin():
+	game = prepare_game()
+	moonkin = game.player1.give("LOE_051")
+	moonkin.play()
+	master = game.player1.give("AT_117")
+	assert master.powered_up
+	master.play()
+	assert master.atk == 4 + 2
+	assert master.health == 2 + 2
+
+
+def test_master_of_ceremonies_enemy_jungle_moonkin():
+	# Test for https://github.com/HearthSim/hs-bugs/issues/337
+	game = prepare_game()
+	moonkin = game.player1.give("LOE_051")
+	moonkin.play()
+	game.end_turn()
+
+	master = game.player2.give("AT_117")
+	assert not master.powered_up
+	master.play()
+	assert master.atk == 4
+	assert master.health == 2
+
+
+def test_the_mistcaller():
+	game = prepare_empty_game()
+	wisp1 = game.player1.give(WISP)
+	wisp2 = game.player1.give(WISP)
+	wisp2.shuffle_into_deck()
+	mistcaller = game.player1.give("AT_054")
+	mistcaller.play()
+	assert mistcaller.atk == mistcaller.health == 4
+	assert wisp1.atk == wisp2.atk == wisp1.health == wisp2.health == 1 + 1
 
 
 def test_power_word_glory():
@@ -481,7 +582,7 @@ def test_seal_of_champions_shrinkmeister():
 
 
 def test_silver_hand_regent():
-	game = prepare_game(HUNTER, HUNTER)
+	game = prepare_game(CardClass.WARRIOR, CardClass.WARRIOR)
 	regent = game.player1.give("AT_100")
 	regent.play()
 	assert len(game.player1.field) == 1
@@ -587,7 +688,7 @@ def test_varian_wrynn():
 
 
 def test_void_crusher():
-	game = prepare_game(WARLOCK, WARLOCK)
+	game = prepare_game(CardClass.WARRIOR, CardClass.WARRIOR)
 	for i in range(3):
 		game.player2.summon(WISP)
 	crusher = game.player1.give("AT_023")
@@ -601,7 +702,7 @@ def test_void_crusher():
 
 
 def test_wilfred_fizzlebang():
-	game = prepare_empty_game(WARLOCK, WARLOCK)
+	game = prepare_empty_game(CardClass.WARLOCK, CardClass.WARLOCK)
 	game.player1.discard_hand()
 	fizzlebang = game.player1.give("AT_027")
 	fizzlebang.play()

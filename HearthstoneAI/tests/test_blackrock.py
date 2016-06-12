@@ -70,7 +70,7 @@ def test_chromaggus_naturalize():
 
 
 def test_dragon_egg():
-	game = prepare_game(PRIEST, PRIEST)
+	game = prepare_game(CardClass.PRIEST, CardClass.PRIEST)
 	egg = game.player1.give("BRM_022")
 	egg.play()
 	assert len(game.player1.field) == 1
@@ -173,18 +173,18 @@ def test_emperor_thaurissan_molten_recombobulator():
 	thaurissan.play()
 	game.end_turn(); game.end_turn()
 
-	assert molten.cost == 19
+	assert molten.cost == 25 - 1
 	thaurissan.destroy()
 	ancestor = game.player1.give("GVG_029")
 	ancestor.play()
-	assert molten.cost == 20
+	assert molten.cost == 25
 	assert molten in game.player1.field
 	game.end_turn(); game.end_turn()
 
 	recomb = game.player1.give("GVG_108")
 	recomb.play(target=molten)
 	assert len(game.player1.field) == 2
-	assert game.player1.field[1].cost == 20
+	assert game.player1.field[0].cost == molten.cost
 
 
 def test_fireguard_destroyer():
@@ -248,9 +248,7 @@ def test_lava_shock():
 
 
 def test_majordomo_executus():
-	game = prepare_game(WARRIOR, WARRIOR)
-	game.end_turn(); game.end_turn()
-
+	game = prepare_game(CardClass.WARRIOR, CardClass.WARRIOR)
 	majordomo = game.player1.give("BRM_027")
 	majordomo.play()
 	game.end_turn(); game.end_turn()
@@ -272,9 +270,8 @@ def test_majordomo_executus():
 
 
 def test_quick_shot():
-	game = prepare_game(HUNTER, HUNTER)
+	game = prepare_game()
 	game.player1.discard_hand()
-	assert len(game.player1.hand) == 0
 	quickshot1 = game.player1.give("BRM_013")
 	wisp = game.player1.give("CS2_231")
 	wisp.play()
@@ -291,7 +288,7 @@ def test_quick_shot():
 
 
 def test_quick_shot_acolyte():
-	game = prepare_game(HUNTER, HUNTER)
+	game = prepare_game()
 	game.player1.discard_hand()
 	assert len(game.player1.hand) == 0
 	quickshot = game.player1.give("BRM_013")

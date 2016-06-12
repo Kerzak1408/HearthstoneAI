@@ -107,6 +107,8 @@ class AttrValue(SelectorEntityValue):
 		self.tag = tag
 
 	def value(self, entity, source):
+		if isinstance(self.tag, str):
+			return getattr(entity, self.tag, 0)
 		return entity.tags.get(self.tag, 0)
 
 	def __call__(self, selector):
@@ -125,6 +127,7 @@ COST = AttrValue(GameTag.COST)
 DAMAGE = AttrValue(GameTag.DAMAGE)
 MANA = AttrValue(GameTag.RESOURCES)
 USED_MANA = AttrValue(GameTag.RESOURCES_USED)
+NUM_ATTACKS_THIS_TURN = AttrValue(GameTag.NUM_ATTACKS_THIS_TURN)
 
 
 class ComparisonSelector(Selector):
@@ -218,7 +221,7 @@ class SetOpSelector(Selector):
 
 	def __repr__(self):
 		name = self.op.__name__
-		if name == "add_":
+		if name == "and_":
 			infix = "+"
 		elif name == "or_":
 			infix = "|"
@@ -299,6 +302,8 @@ class RandomSelector(Selector):
 		return RandomSelector(self.child, self.times * other)
 
 RANDOM = RandomSelector
+
+MORTALLY_WOUNDED = CURRENT_HEALTH <= 0
 
 # Selects the highest and lowest attack entities, respectively
 HIGHEST_ATK = lambda sel: RANDOM(sel + (AttrValue(GameTag.ATK) == OpAttr(sel, GameTag.ATK, max)))
@@ -435,7 +440,7 @@ RANDOM_OTHER_CHARACTER = RANDOM(ALL_CHARACTERS - SELF)
 RANDOM_FRIENDLY_MINION = RANDOM(FRIENDLY_MINIONS)
 RANDOM_OTHER_FRIENDLY_MINION = RANDOM(FRIENDLY_MINIONS - SELF)
 RANDOM_FRIENDLY_CHARACTER = RANDOM(FRIENDLY_CHARACTERS)
-RANDOM_ENEMY_MINION = RANDOM(ENEMY_MINIONS)
-RANDOM_ENEMY_CHARACTER = RANDOM(ENEMY_CHARACTERS)
+RANDOM_ENEMY_MINION = RANDOM(ENEMY_MINIONS - MORTALLY_WOUNDED)
+RANDOM_ENEMY_CHARACTER = RANDOM(ENEMY_CHARACTERS - MORTALLY_WOUNDED)
 
 DAMAGED_CHARACTERS = ALL_CHARACTERS + DAMAGED

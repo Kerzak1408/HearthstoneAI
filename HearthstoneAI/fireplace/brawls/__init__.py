@@ -1,5 +1,6 @@
 import random
 from hearthstone.enums import CardClass, CardType, GameTag
+from ..cards.brawl.banana_brawl import RandomBanana
 from ..cards.utils import *
 from ..game import Game
 
@@ -62,8 +63,8 @@ class BlackrockShowdownBrawl(Game):
 			player.starting_deck, player.starting_hero = deck
 		return cls(players)
 
-	def prepare(self):
-		super().prepare()
+	def setup(self):
+		super().setup()
 		for player in self.players:
 			if player.hero.id == self.NEFARIAN_DECK[1]:
 				player.max_mana = 4
@@ -81,12 +82,10 @@ class BananaBrawl(Game):
 	celebrate!
 	"""
 
-	RandomBanana = RandomID("EX1_014t", "TB_006", "TB_007", "TB_008")
-
 	def _schedule_death(self, card):
 		ret = super()._schedule_death(card)
 		if card.type == CardType.MINION:
-			ret.append(Give(card.controller, self.RandomBanana))
+			ret.append(Give(card.controller, RandomBanana))
 		return ret
 
 
@@ -158,8 +157,8 @@ class HeartOfTheSunwellBrawl(Game):
 	can do with it!
 	"""
 
-	def prepare(self):
-		super().prepare()
+	def setup(self):
+		super().setup()
 		for player in self.players:
 			player.max_mana = 10
 

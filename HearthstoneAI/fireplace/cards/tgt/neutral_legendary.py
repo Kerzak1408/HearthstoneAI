@@ -4,66 +4,62 @@ from ..utils import *
 ##
 # Minions
 
-# Confessor Paletress
-class AT_018:
-	inspire = Summon(CONTROLLER, RandomMinion(rarity=Rarity.LEGENDARY))
-
-
-# Skycap'n Kragg
 class AT_070:
+	"Skycap'n Kragg"
 	cost_mod = -Count(FRIENDLY_MINIONS + PIRATE)
 
 
-# Gormok the Impaler
 class AT_122:
+	"Gormok the Impaler"
 	play = (Count(FRIENDLY_MINIONS) >= 4) & Hit(TARGET, 4)
 
 
-# Chillmaw
 class AT_123:
+	"Chillmaw"
 	deathrattle = HOLDING_DRAGON & Hit(ALL_MINIONS, 3)
 
 
-# Bolf Ramshield
 class AT_124:
+	"Bolf Ramshield"
 	events = Predamage(FRIENDLY_HERO).on(
 		Predamage(FRIENDLY_HERO, 0), Hit(SELF, Predamage.AMOUNT)
 	)
 
 
-# Icehowl
 class AT_125:
+	"Icehowl"
 	tags = {GameTag.CANNOT_ATTACK_HEROES: True}
 
 
-# Nexus-Champion Saraad
 class AT_127:
+	"Nexus-Champion Saraad"
 	inspire = Give(CONTROLLER, RandomSpell())
 
 
-# The Skeleton Knight
 class AT_128:
+	"The Skeleton Knight"
 	deathrattle = JOUST & Bounce(SELF)
 
 
-# Fjola Lightbane
 class AT_129:
+	"Fjola Lightbane"
 	events = Play(CONTROLLER, SPELL, SELF).on(GiveDivineShield(SELF))
 
 
-# Eydis Darkbane
 class AT_131:
+	"Eydis Darkbane"
 	events = Play(CONTROLLER, SPELL, SELF).on(Hit(RANDOM_ENEMY_CHARACTER, 3))
 
 
-# Justicar Trueheart
 class AT_132:
+	"Justicar Trueheart"
 	HERO_POWER_MAP = {
 		"CS2_017": "AT_132_DRUID",
 		"DS1h_292": "AT_132_HUNTER",
 		"DS1h_292_H1": "DS1h_292_H1_AT_132",
 		"CS2_034": "AT_132_MAGE",
 		"CS2_101": "AT_132_PALADIN",
+		"CS2_101_H": "CS2_101_H1_AT_132",
 		"CS1h_001": "AT_132_PRIEST",
 		"CS2_083b": "AT_132_ROGUE",
 		"CS2_049": "AT_132_SHAMAN",
@@ -72,7 +68,6 @@ class AT_132:
 		"CS2_102_H1": "CS2_102_H1_AT_132",
 	}
 
-	def play(self):
-		upgrade = AT_132.HERO_POWER_MAP.get(self.controller.hero.power.id)
-		if upgrade:
-			yield Summon(CONTROLLER, upgrade)
+	play = Switch(FRIENDLY_HERO_POWER, {
+		k: Summon(CONTROLLER, v) for k, v in HERO_POWER_MAP.items()
+	})

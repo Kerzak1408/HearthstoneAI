@@ -4,7 +4,6 @@ from ..actions import *
 from ..aura import Refresh
 from ..dsl import *
 from ..events import *
-from ..utils import custom_card
 
 
 # For buffs which are removed when the card is moved to play (eg. cost buffs)
@@ -30,6 +29,13 @@ EMPTY_HAND = Count(FRIENDLY_HAND) == 0
 FULL_BOARD = Count(FRIENDLY_MINIONS) == 7
 FULL_HAND = Count(FRIENDLY_HAND) == 10
 HOLDING_DRAGON = Find(FRIENDLY_HAND + DRAGON - SELF)
+
+DISCOVER = lambda *args: Discover(CONTROLLER, *args)
+
+# 50% chance to attack the wrong enemy.
+FORGETFUL = Attack(SELF).on(COINFLIP & Retarget(SELF, RANDOM(ALL_CHARACTERS - Attack.DEFENDER - CONTROLLED_BY(SELF))))
+
+AT_MAX_MANA = lambda s: MANA(s) == 10
 
 
 class JoustHelper(Evaluator):
@@ -95,4 +101,25 @@ def AttackHealthSwapBuff():
 	cls.max_health = lambda self, i: self._xhealth
 	cls.apply = apply
 
+	return cls
+
+
+def GainEmptyMana(selector, amount):
+	"""
+	Helper to gain an empty mana crystal (gains mana, then spends it)
+	"""
+	return GainMana(selector, amount), SpendMana(selector, amount)
+
+
+def custom_card(cls):
+	from . import CardDB, db
+	id = cls.__name__
+	if GameTag.CARDNAME not in cls.tags:
+		raise ValueError("No name provided for custom card %r" % (cls))
+	db[id] = CardDB.merge(id, None, cls)
+	# Give the card its fake name
+	db[id]._localized_tags = {
+		GameTag.CARDNAME: {"enUS": cls.tags[GameTag.CARDNAME]},
+		GameTag.CARDTEXT_INHAND: {"enUS": ""}
+	}
 	return cls

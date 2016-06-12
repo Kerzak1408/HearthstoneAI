@@ -18,9 +18,9 @@ PREFIXES = {
 
 SOLVED_KEYWORDS = [
 	"Windfury", "Charge", "Divine Shield", "Taunt", "Stealth",
-	"Can't be targeted by spells or Hero Powers",
+	r"Can't be targeted by spells or Hero Powers\.",
+	r"Can't attack\.",
 	"Destroy any minion damaged by this minion.",
-	"50% chance to attack the wrong enemy",
 	r"Your Hero Power deals \d+ extra damage.",
 	r"Spell Damage \+\d+",
 	r"Overload: \(\d+\)",
@@ -28,7 +28,6 @@ SOLVED_KEYWORDS = [
 
 DUMMY_CARDS = (
 	"PlaceholderCard",  # Placeholder Card
-	"CS1_113e",  # Mind Control
 	"CS2_022e",  # Polymorph
 	"EX1_246e",  # Hexxed
 	"EX1_345t",  # Shadow of Nothing
@@ -38,12 +37,11 @@ DUMMY_CARDS = (
 	"NEW1_025e",  # Bolstered (Unused)
 	"TU4c_005",  # Hidden Gnome
 	"TU4c_007",  # Mukla's Big Brother
-	"XXX_009e",  # Empty Enchant
-	"XXX_058e",  # Weapon Nerf Enchant
 
 	# Dynamic buffs set by their parent
 	"CS2_236e",  # Divine Spirit
 	"EX1_304e",  # Consume (Void Terror)
+	"LOE_030e",  # Hollow (Unused)
 	"NEW1_018e",  # Treasure Crazed (Bloodsail Raider)
 )
 
@@ -82,6 +80,7 @@ def main():
 		args.implemented = True
 		args.unimplemented = True
 
+	cards.db.initialize()
 	for id in sorted(cards.db):
 		card = cards.db[id]
 		description = cleanup_description(card.description)

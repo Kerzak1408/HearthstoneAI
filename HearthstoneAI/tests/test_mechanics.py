@@ -3,7 +3,7 @@ from fireplace.cards.utils import Give, JOUST
 
 
 def test_armor():
-	game = prepare_game(WARRIOR, WARRIOR)
+	game = prepare_game(CardClass.WARRIOR, CardClass.WARRIOR)
 	assert game.current_player.hero.armor == 0
 	assert not game.current_player.hero.power.exhausted
 	assert game.current_player.hero.power.is_usable()
@@ -280,7 +280,7 @@ def test_discard_enchanted_cards():
 
 
 def test_divine_shield():
-	game = prepare_game(MAGE, MAGE)
+	game = prepare_game(CardClass.MAGE, CardClass.MAGE)
 	squire = game.player1.give("EX1_008")
 	squire.play()
 	assert squire.divine_shield
@@ -524,10 +524,10 @@ def test_morph():
 	game = prepare_game()
 	game.end_turn()
 
-	buzzard = game.player2.give("CS2_237")
-	buzzard.play()
 	wisp = game.player2.give(WISP)
 	wisp.play()
+	buzzard = game.player2.give("CS2_237")
+	buzzard.play()
 	game.end_turn()
 
 	game.player1.discard_hand()
@@ -537,7 +537,7 @@ def test_morph():
 	hex = game.player1.give("EX1_246")
 	hex.play(target=wisp)
 	assert not game.player2.field.contains(WISP)
-	assert game.player2.field.contains("hexfrog")
+	assert game.player2.field[0].id == "hexfrog"
 	# Test that buzzard no longer draws on poly/hex (fixed in GVG)
 	assert not game.player2.hand
 	game.end_turn(); game.end_turn()
@@ -547,6 +547,30 @@ def test_morph():
 	polymorph.play(target=game.player2.field[-1])
 	assert game.player2.field[-1].id == "CS2_tk1"
 	assert len(game.current_player.opponent.hand) == 1
+
+
+def test_mulligan():
+	# Create and start a game but do not perform the mulligan yet
+	game = init_game(game_class=Game)
+	game.start()
+	hand1 = game.player1.hand[:]
+	hand2 = game.player2.hand[:]
+	# Double-check no player has The Coin (yet)
+	assert not game.player1.hand.contains(THE_COIN)
+	assert not game.player2.hand.contains(THE_COIN)
+	assert len(hand1) == 3
+	assert len(hand2) == 4
+	# Do not choose anything for player 1
+	game.player1.choice.choose()
+	assert game.player1.hand == hand1
+
+	# Replace the first two cards for player 2
+	game.player2.choice.choose(hand2[0], hand2[1])
+	assert hand2[0] not in game.player2.hand
+	assert hand2[1] not in game.player2.hand
+	assert hand2[2] in game.player2.hand
+	assert hand2[3] in game.player2.hand
+	assert game.player2.hand[4] == THE_COIN
 
 
 def test_no_death_processing_during_battlecry():
@@ -695,7 +719,7 @@ def test_silence_multiple_buffs():
 
 
 def test_spell_power():
-	game = prepare_game(HUNTER, HUNTER)
+	game = prepare_game(CardClass.HUNTER, CardClass.HUNTER)
 
 	expected_health = 30
 	assert game.player2.hero.health == expected_health
@@ -739,7 +763,7 @@ def test_spell_power():
 
 
 def test_stealth_windfury():
-	game = prepare_game(MAGE, MAGE)
+	game = prepare_game(CardClass.MAGE, CardClass.MAGE)
 	worgen = game.player1.give("EX1_010")
 	worgen.play()
 	assert worgen.stealthed

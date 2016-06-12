@@ -73,7 +73,7 @@ def test_alexstrasza():
 
 
 def test_alexstrasza_armor():
-	game = prepare_game(WARRIOR, WARRIOR)
+	game = prepare_game(CardClass.WARRIOR, CardClass.WARRIOR)
 	game.player1.hero.power.use()
 	game.end_turn()
 
@@ -163,7 +163,7 @@ def test_ancient_of_lore():
 
 	ancient1 = game.player1.give("NEW1_008")
 	ancient1.play(choose="NEW1_008a")  # Draw 2 Cards
-	assert len(game.player1.hand) == 2
+	assert len(game.player1.hand) == 1
 	assert game.player1.hero.health == 30 - 10
 	game.end_turn(); game.end_turn()
 
@@ -212,7 +212,7 @@ def test_angry_chicken():
 
 
 def test_arcane_explosion():
-	game = prepare_game(MAGE, MAGE)
+	game = prepare_game()
 	# play some wisps
 	game.player1.give(WISP).play()
 	game.player1.give(WISP).play()
@@ -233,16 +233,19 @@ def test_arcane_golem():
 	assert game.player1.max_mana == 4
 	assert game.player2.max_mana == 3
 	golem.play()
-	assert golem.charge
 	assert game.player1.max_mana == 4
 	assert game.player2.max_mana == 4
 
 
 def test_arcane_missiles():
 	game = prepare_game()
+	wisp = game.player2.summon(WISP)
 	missiles = game.player1.give("EX1_277")
 	missiles.play()
-	assert game.player2.hero.health == 27
+	if wisp.dead:
+		assert game.player2.hero.health == 28
+	else:
+		assert game.player2.hero.health == 27
 
 
 def test_archmage_antonidas():
@@ -287,8 +290,12 @@ def test_armorsmith():
 
 def test_avenging_wrath():
 	game = prepare_game()
+	wisp = game.player2.summon(WISP)
 	game.player1.give("EX1_384").play()
-	assert game.player2.hero.health == 30 - 8
+	if wisp.dead:
+		assert game.player2.hero.health == 30 - 7
+	else:
+		assert game.player2.hero.health == 30 - 8
 	game.end_turn()
 
 	# Summon Malygos and test that spellpower only increases dmg by 5
@@ -441,6 +448,23 @@ def test_big_game_hunter():
 	assert bgh2.has_target()
 	bgh2.play(target=wargolem)
 	assert wargolem.dead
+
+
+def test_blade_flurry():
+	game = prepare_game()
+	game.player1.give(WISP).play()
+	game.player1.give(WISP).play()
+	game.end_turn()
+
+	game.player2.give(WISP).play()
+	flurry = game.player2.give("CS2_233")
+	assert not flurry.is_playable()
+	game.player2.give(LIGHTS_JUSTICE).play()
+	assert flurry.is_playable()
+	flurry.play()
+	assert not game.player1.field
+	assert len(game.player2.field) == 1
+	assert game.player1.hero.health == game.player2.hero.health == 30
 
 
 def test_blessing_of_wisdom():
@@ -804,10 +828,10 @@ def test_cult_master_board_clear():
 
 
 def test_deadly_poison():
-	game = prepare_game(ROGUE, ROGUE)
+	game = prepare_game()
 	poison = game.player1.give("CS2_074")
 	assert not poison.is_playable()
-	game.player1.hero.power.use()
+	game.player1.give(LIGHTS_JUSTICE).play()
 	assert game.player1.weapon.atk == 1
 	assert game.player1.hero.atk == 1
 	assert poison.is_playable()
@@ -1138,7 +1162,7 @@ def test_faceless_manipulator_velens_chosen():
 
 
 def test_faerie_dragon():
-	game = prepare_game(MAGE, MAGE)
+	game = prepare_game(CardClass.MAGE, CardClass.MAGE)
 	dragon = game.player1.give("NEW1_023")
 	dragon.play()
 	moonfire = game.player1.give(MOONFIRE)
@@ -1237,12 +1261,7 @@ def test_flame_leviathan():
 def test_force_of_nature():
 	game = prepare_game()
 	game.player1.give("EX1_571").play()
-	assert len(game.player1.field) == 3
-	assert len(game.player1.field.filter(id="EX1_tk9")) == 3
-	game.player1.field[0].attack(game.player2.hero)
-	assert game.player2.hero.health == 30 - 2
-	game.end_turn()
-	assert len(game.player1.field) == 0
+	assert game.player1.field == ["EX1_tk9"] * 3
 
 
 def test_gadgetzan_auctioneer():
@@ -1650,7 +1669,7 @@ def test_imp_master():
 
 
 def test_kill_command():
-	game = prepare_game(HUNTER, HUNTER)
+	game = prepare_game()
 	kc = game.player1.give("EX1_539")
 	assert not kc.powered_up
 	kc.play(target=game.player1.opponent.hero)
@@ -1772,20 +1791,17 @@ def test_lightspawn():
 
 
 def test_lightwarden():
-	game = prepare_game(PRIEST, PRIEST)
-	lightwarden = game.current_player.give("EX1_001")
+	game = prepare_game(CardClass.PRIEST, CardClass.PRIEST)
+	lightwarden = game.player1.give("EX1_001")
 	lightwarden.play()
 	assert lightwarden.atk == 1
-	game.end_turn(); game.end_turn()
-
 	# No-op heal should not do anything.
-	assert game.current_player.hero.health == 30
-	game.current_player.hero.power.use(target=game.current_player.hero)
-	assert game.current_player.hero.health == 30
+	game.player1.hero.power.use(target=game.player1.hero)
 	assert lightwarden.atk == 1
-	lightwarden.attack(target=game.current_player.opponent.hero)
 	game.end_turn()
-	game.current_player.hero.power.use(target=game.current_player.hero)
+
+	game.player2.give(MOONFIRE).play(target=game.player2.hero)
+	game.player2.hero.power.use(target=game.player2.hero)
 	assert lightwarden.atk == 3
 
 
@@ -1917,11 +1933,15 @@ def test_master_of_disguise():
 	game = prepare_game()
 	wisp = game.player1.give(WISP)
 	wisp.play()
-	masterofdisguise = game.player1.give("NEW1_014")
-	masterofdisguise.play(target=wisp)
+	mod = game.player1.give("NEW1_014")
+	mod.play(target=wisp)
 	assert wisp.stealthed
-	game.end_turn(); game.end_turn()
+	game.end_turn()
+
 	assert wisp.stealthed
+	game.end_turn()
+
+	assert not wisp.stealthed
 
 
 def test_mana_wraith():
@@ -1957,38 +1977,29 @@ def test_mana_wraith():
 
 
 def test_millhouse_manastorm():
-	game = prepare_game(WARRIOR, MAGE)
-	game.player1.discard_hand()
-	game.player2.discard_hand()
+	game = prepare_game()
 	millhouse = game.player1.give("NEW1_029")
 	fireballp1 = game.player1.give("CS2_029")
 	fireball1 = game.player2.give("CS2_029")
 	fireball2 = game.player2.give("CS2_029")
 	moonfire = game.player2.give(MOONFIRE)
 
-	assert fireball1.cost == 4
-	assert fireball2.cost == 4
+	assert fireball1.cost == fireball2.cost == fireballp1.cost == 4
 	assert moonfire.cost == 0
 	assert fireballp1.cost == 4
 	millhouse.play()
 	# costs change as soon as millhouse is played
 	assert game.player2.hero.buffs
-	assert fireball1.cost == 0
-	assert fireball2.cost == 0
-	assert moonfire.cost == 0
+	assert fireball1.cost == fireball2.cost == moonfire.cost == 0
 	assert fireballp1.cost == 4
 	game.end_turn()
 
-	assert fireball1.cost == 0
-	assert fireball2.cost == 0
-	assert moonfire.cost == 0
+	assert fireball1.cost == fireball2.cost == moonfire.cost == 0
 	assert fireballp1.cost == 4
 	game.end_turn()
 
-	assert fireball1.cost == 4
-	assert fireball2.cost == 4
+	assert fireball1.cost == fireball2.cost == fireballp1.cost == 4
 	assert moonfire.cost == 0
-	assert fireballp1.cost == 4
 
 
 def test_mind_control():
@@ -2028,11 +2039,20 @@ def test_mind_control_tech():
 
 
 def test_mindgames():
-	game = prepare_game(PRIEST, PRIEST)
+	game = prepare_empty_game()
+	wisp = game.player2.give(WISP)
+	wisp.shuffle_into_deck()
 	mindgames = game.player1.give("EX1_345")
 	mindgames.play()
 	assert len(game.player1.field) == 1
-	assert game.player2.deck.contains(game.player1.field[0])
+	assert game.player1.field[0].id == WISP
+	assert wisp in game.player2.deck
+	game.end_turn()
+
+	mindgames2 = game.player2.give("EX1_345")
+	mindgames2.play()
+	assert len(game.player2.field) == 1
+	assert game.player2.field[0].id == "EX1_345t"
 
 
 def test_mind_vision():
@@ -2068,18 +2088,18 @@ def test_mirror_image():
 def test_molten_giant():
 	game = prepare_game()
 	molten = game.current_player.give("EX1_620")
-	assert molten.cost == 20
-	game.current_player.give(MOONFIRE).play(target=game.current_player.hero)
-	assert molten.cost == 19
-	game.current_player.give(MOONFIRE).play(target=game.current_player.hero)
-	assert molten.cost == 18
-	game.current_player.give(MOONFIRE).play(target=game.current_player.hero)
-	assert molten.cost == 17
+	assert molten.cost == 25
+	game.current_player.give(MOONFIRE).play(target=game.player1.hero)
+	assert molten.cost == 25 - 1
+	game.current_player.give(MOONFIRE).play(target=game.player1.hero)
+	assert molten.cost == 25 - 2
+	game.current_player.give(MOONFIRE).play(target=game.player1.hero)
+	assert molten.cost == 25 - 3
 	game.end_turn()
 
-	assert molten.cost == 17
-	molten2 = game.current_player.give("EX1_620")
-	assert molten2.cost == 20
+	assert molten.cost == 25 - 3
+	molten2 = game.player2.give("EX1_620")
+	assert molten2.cost == 25
 
 
 def test_mortal_coil():
@@ -2147,7 +2167,7 @@ def test_murloc_tidecaller():
 
 
 def test_northshire_cleric():
-	game = prepare_game(PRIEST, PRIEST)
+	game = prepare_game(CardClass.PRIEST, CardClass.PRIEST)
 	game.player1.discard_hand()
 	game.player2.discard_hand()
 	cleric = game.player1.give("CS2_235")
@@ -2334,7 +2354,7 @@ def test_preparation():
 
 
 def test_prophet_velen():
-	game = prepare_game(PRIEST, PRIEST)
+	game = prepare_game(CardClass.PRIEST, CardClass.PRIEST)
 
 	expected_health = 30
 	assert game.player2.hero.health == expected_health
@@ -2368,7 +2388,7 @@ def test_prophet_velen():
 
 
 def test_prophet_velen_multiple():
-	game = prepare_game(PRIEST, PRIEST)
+	game = prepare_game(CardClass.PRIEST, CardClass.PRIEST)
 
 	expected_health = 30
 	assert game.player2.hero.health == expected_health
@@ -2514,7 +2534,7 @@ def test_savage_roar():
 
 
 def test_savagery():
-	game = prepare_game(DRUID, DRUID)
+	game = prepare_game(CardClass.DRUID, CardClass.DRUID)
 	statue = game.player1.give(ANIMATED_STATUE)
 	statue.play()
 	assert statue.health == 10
@@ -2736,7 +2756,7 @@ def test_shadowflame():
 
 
 def test_shadowform():
-	game = prepare_game(PRIEST, PRIEST)
+	game = prepare_game(CardClass.PRIEST, CardClass.PRIEST)
 	# Hero Power should reset
 	shadowform1 = game.player1.give("EX1_625")
 	assert game.player1.hero.power.id == "CS1h_001"
@@ -2801,7 +2821,7 @@ def test_shattered_sun_cleric():
 
 
 def test_shield_slam():
-	game = prepare_game(WARRIOR, WARRIOR)
+	game = prepare_game(CardClass.WARRIOR, CardClass.WARRIOR)
 	wisp = game.player2.summon(WISP)
 	assert game.player1.hero.armor == 0
 	shieldslam1 = game.player1.give("EX1_410")
@@ -2875,7 +2895,7 @@ def test_sorcerers_apprentice():
 
 
 def test_southsea_deckhand():
-	game = prepare_game(ROGUE, ROGUE)
+	game = prepare_game(CardClass.ROGUE, CardClass.ROGUE)
 	deckhand = game.player1.give("CS2_146")
 	deckhand.play()
 	assert not deckhand.charge
@@ -2994,7 +3014,7 @@ def test_summoning_portal():
 	weapon = game.player1.give(LIGHTS_JUSTICE)
 	assert weapon.cost == 1
 	molten = game.player1.give("EX1_620")
-	assert molten.cost == 20
+	assert molten.cost == 25
 	goldshire = game.player1.give(GOLDSHIRE_FOOTMAN)
 	assert goldshire.cost == 1
 	frostwolf = game.player1.give("CS2_121")
@@ -3004,15 +3024,15 @@ def test_summoning_portal():
 	portal.play()
 	assert wisp.cost == 0
 	assert weapon.cost == 1
-	assert molten.cost == 18
+	assert molten.cost == 25 - 2
 	assert goldshire.cost == 1
 	assert frostwolf.cost == 1
 	game.player1.give(MOONFIRE).play(target=game.player1.hero)
-	assert molten.cost == 17
+	assert molten.cost == 25 - 3
 	portal2 = game.player1.give("EX1_315")
 	portal2.play()
 	assert wisp.cost == 0
-	assert molten.cost == 20 - 2 - 1 - 2
+	assert molten.cost == 25 - 2 - 1 - 2
 	assert goldshire.cost == 1
 	assert frostwolf.cost == 1
 
@@ -3030,7 +3050,7 @@ def test_sunfury_protector():
 
 
 def test_sword_of_justice():
-	game = prepare_game(PALADIN, PALADIN)
+	game = prepare_game(CardClass.PALADIN, CardClass.PALADIN)
 	sword = game.player1.give("EX1_366")
 	sword.play()
 	assert sword.durability == 5
@@ -3042,21 +3062,20 @@ def test_sword_of_justice():
 	assert sword.durability == 4
 	game.end_turn()
 
-	game.current_player.give(WISP).play()
+	game.player2.give(WISP).play()
 	assert sword.durability == 4
 	game.end_turn()
 
-	game.current_player.hero.power.use()
+	game.player1.hero.power.use()
 	assert sword.durability == 3
 
-	game.current_player.give(WISP).play()
-	game.current_player.give(WISP).play()
-	game.current_player.give(WISP).play()
-	assert not game.current_player.weapon
-	wisp2 = game.current_player.give(WISP)
+	game.player1.give(WISP).play()
+	game.player1.give(WISP).play()
+	game.player1.give(WISP).play()
+	assert not game.player1.weapon
+	wisp2 = game.player1.give(WISP)
 	wisp2.play()
-	assert wisp2.health == 1
-	assert wisp2.atk == 1
+	assert wisp2.health == wisp2.atk == 1
 	assert not wisp2.buffs
 
 

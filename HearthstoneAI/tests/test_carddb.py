@@ -19,8 +19,7 @@ def test_all_tags_known():
 	assert utils.fireplace.cards.db
 
 	for card in CARDS.values():
-		card_tags = [int(e.attrib["enumID"]) for e in card.xml.findall("./Tag")]
-		for tag in card_tags:
+		for tag in card.tags:
 			# We have fake tags in fireplace.enums which are always negative
 			if tag not in known_tags and tag > 0:
 				unknown_tags.add(tag)
@@ -37,3 +36,13 @@ def test_play_scripts():
 			assert card.type == CardType.HERO_POWER
 		elif card.scripts.play:
 			assert card.type not in (CardType.HERO, CardType.HERO_POWER, CardType.ENCHANTMENT)
+
+
+def test_card_docstrings():
+	for card in CARDS.values():
+		c = utils.fireplace.utils.get_script_definition(card.id)
+		name = c.__doc__
+		if name is not None:
+			if name.endswith(")"):
+				continue
+			assert name == card.name

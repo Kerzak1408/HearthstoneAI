@@ -36,13 +36,6 @@ def test_brann_novice_engineer():
 	assert len(game.player1.hand) == 2
 
 
-def test_brann_youthful_brewmaster():
-	game, brann = _prepare_game()
-	brewmaster = game.player1.give("EX1_049")
-	brewmaster.play(target=brann)
-	assert brann in game.player1.hand
-
-
 def test_brann_recombobulator():
 	game, brann = _prepare_game()
 	recombobulator = game.player1.give("GVG_108")
@@ -53,6 +46,13 @@ def test_brann_recombobulator():
 	morphed2 = wisp.morphed
 	assert morphed2 not in game.player1.field
 	assert morphed2.cost == 0
-
-	morphed1 = game.player1.field[2]
+	morphed1 = game.player1.field[1]
 	assert morphed1.cost == 0
+	assert game.player1.field[2] == recombobulator
+
+
+def test_brann_youthful_brewmaster():
+	game, brann = _prepare_game()
+	brewmaster = game.player1.give("EX1_049")
+	brewmaster.play(target=brann)
+	assert brann in game.player1.hand

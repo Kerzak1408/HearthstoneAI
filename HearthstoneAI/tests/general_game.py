@@ -9,6 +9,10 @@ import zipfile
 import os
 import csv
 import json
+import sys; sys.path.append("..")
+from fireplace import cards
+from fireplace.exceptions import GameOver
+from fireplace.utils import play_full_game
 from os.path import dirname, basename, isfile
 from replays.replays import *
 from fireplace.cards.heroes import *
@@ -22,11 +26,14 @@ from fireplace.dsl.selector import CURRENT_HEALTH, FRIENDLY_HERO, ENEMY_MINIONS,
 from AI.bots import *
 from AI.bots.q_learner import *
 from AI.bots.q_learner_super_makro import *
+from AI.bots.q_learner_super_makro_alt import *
 from AI.bots.q_learner_table import *
+from AI.bots.q_learner_table_08 import *
+from AI.bots.q_learner_table_win import *
 from fireplace.card import Spell, Secret, Weapon, HeroPower
 from _datetime import date, datetime
-from pybrain.tools.customxml import NetworkWriter
-from pybrain.tools.customxml import NetworkReader
+# from pybrain.tools.customxml import NetworkWriter
+# from pybrain.tools.customxml import NetworkReader
 
 ''' Following attributes will only be applied if no command prompt arguments were given. '''
 ''' !!! AIs to be used !!! '''
@@ -174,29 +181,29 @@ def test_full_game(ai_1_id, deck_1_id, ai_2_id, deck_2_id, clear_results):
         
     except GameOver:
         win_reward = 0
-        if (player1.__class__ is Q_learner_super_makro):
-            if (player1.hero.health > 0):
-                reward = win_reward
-            else:
-                reward = 0
-            player1.update_neural_network(player1.previous_state, player1.previous_q_value, player1.get_state(), player1.previous_action, reward)
-            net = player1.neural_network
-#            path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
-#            NetworkWriter.writeToFile(net, path)
-            neural_net = net
+#         if (player1.__class__ is Q_learner_super_makro or player1.__class__ is Q_learner_super_makro_alt):
+#             if (player1.hero.health > 0):
+#                 reward = win_reward
+#             else:
+#                 reward = 0
+#             player1.update_neural_network(player1.previous_state, player1.previous_q_value, player1.get_state(), player1.previous_action, reward)
+#             net = player1.neural_network
+# #            path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
+# #            NetworkWriter.writeToFile(net, path)
+#             neural_net = net
+#             
+#         if (player2.__class__ is Q_learner_super_makro or player2.__class__ is Q_learner_super_makro_alt):
+#             if (player2.hero.health > 0):
+#                 reward = win_reward
+#             else:
+#                 reward = 0
+#             player2.update_neural_network(player2.previous_state, player2.previous_q_value, player2.get_state(), player2.previous_action, reward)
+#             net = player2.neural_network
+# #            path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
+# #            NetworkWriter.writeToFile(net, path)
+#             neural_net = net
             
-        if (player2.__class__ is Q_learner_super_makro):
-            if (player2.hero.health > 0):
-                reward = win_reward
-            else:
-                reward = 0
-            player2.update_neural_network(player2.previous_state, player2.previous_q_value, player2.get_state(), player2.previous_action, reward)
-            net = player2.neural_network
-#            path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
-#            NetworkWriter.writeToFile(net, path)
-            neural_net = net
-            
-        if (player1.__class__ is Q_learner_table):
+        if (player1.__class__ is Q_learner_table or player1.__class__ is Q_learner_table_08 or player1.__class__ is Q_learner_table_win):
             if (player1.hero.health > 0):
                 reward = 0
             else:
@@ -204,12 +211,12 @@ def test_full_game(ai_1_id, deck_1_id, ai_2_id, deck_2_id, clear_results):
             player1.update_table(player1.previous_state, player1.get_state(), player1.previous_action, reward)
             table = player1.table
             
-        if (player2.__class__ is Q_learner_table):
+        if (player2.__class__ is Q_learner_table or player2.__class__ is Q_learner_table_08 or player2.__class__ is Q_learner_table_win):
             if (player2.hero.health > 0):
                 reward = 0
             else:
                 reward = 0
-            player2.update_table(player2.previous_state, player2.previous_q_value, player2.get_state(), player2.previous_action, reward)
+            player2.update_table(player2.previous_state, player2.get_state(), player2.previous_action, reward)
             table = player2.table
             
         #LAST TURN
@@ -293,9 +300,9 @@ def get_instance_by_name(ai_id, deck_id):
                 for (class_name,class_dynamic) in inspect.getmembers(module):
                     if (class_name == ai_id):
                         if (class_name == "Q_learner" or class_name == "Q_learner_makro" or class_name == "Q_learner_super_makro"
-                            or class_name == "Q_learner_value"):
+                            or class_name == "Q_learner_value" or class_name == "Q_learner_super_makro_alt"):
                             result = class_dynamic(ai_id, deck_id, neural_net)
-                        elif (class_name == "Q_learner_table"):
+                        elif (class_name == "Q_learner_table" or class_name == "Q_learner_table_08" or class_name == "Q_learner_table_win"):
                             result = class_dynamic(ai_id, deck_id, table)
                         else:
                             result = class_dynamic(ai_id, deck_id)
@@ -370,24 +377,36 @@ def main():
     
     os.path.join(os.getcwd())
     
-    if (player1.__class__ is Q_learner_super_makro):
-        net = player1.neural_network
-        path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
-        NetworkWriter.writeToFile(net, path)
-        neural_net = net
-
-    if (player2.__class__ is Q_learner_super_makro):
-        net = player2.neural_network
-        path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
-        NetworkWriter.writeToFile(net, path)
-        neural_net = net
+#     if (player1.__class__ is Q_learner_super_makro or player1.__class__ is Q_learner):
+#         net = player1.neural_network
+#         path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
+#         NetworkWriter.writeToFile(net, path)
+#         neural_net = net
+# 
+#     if (player2.__class__ is Q_learner_super_makro or player2.__class__ is Q_learner):
+#         net = player2.neural_network
+#         path = os.path.join(os.path.dirname(os.getcwd()), 'network.xml')
+#         NetworkWriter.writeToFile(net, path)
+#         neural_net = net
         
-    if (player1.__class__ is Q_learner_table):
+#     if (player1.__class__ is Q_learner_super_makro_alt):
+#         net = player1.neural_network
+#         path = os.path.join(os.path.dirname(os.getcwd()), 'network_alt.xml')
+#         NetworkWriter.writeToFile(net, path)
+#         neural_net = net
+# 
+#     if (player2.__class__ is Q_learner_super_makro_alt):
+#         net = player2.neural_network
+#         path = os.path.join(os.path.dirname(os.getcwd()), 'network_alt.xml')
+#         NetworkWriter.writeToFile(net, path)
+#         neural_net = net
+        
+    if (player1.__class__ is Q_learner_table or player1.__class__ is Q_learner_table_08 or player1.__class__ is Q_learner_table_win):
         table = player1.table
         path = os.path.join(os.path.dirname(os.getcwd()), 'table.txt')
         numpy.save(path, table)
         
-    if (player2.__class__ is Q_learner_table):
+    if (player2.__class__ is Q_learner_table or player2.__class__ is Q_learner_table_08 or player2.__class__ is Q_learner_table_win):
         table = player2.table
         path = os.path.join(os.path.dirname(os.getcwd()), 'table.txt')
         numpy.save(path, table)

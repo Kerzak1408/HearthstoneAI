@@ -81,7 +81,7 @@ class BaseCard(BaseEntity):
 
 		if old:
 			self.logger.debug("%r moves from %r to %r", self, old, value)
-			
+
 		caches = {
 			Zone.HAND: self.controller.hand,
 			Zone.DECK: self.controller.deck,
@@ -165,6 +165,13 @@ class PlayableCard(BaseCard, Entity, TargetableByAuras):
 		self._cost = value
 
 	@property
+	def must_choose_one(self):
+		"""
+		Returns True if the card has active choices
+		"""
+		return bool(self.choose_cards)
+
+	@property
 	def powered_up(self):
 		"""
 		Returns True whether the card is "powered up".
@@ -211,7 +218,6 @@ class PlayableCard(BaseCard, Entity, TargetableByAuras):
 		self.zone = Zone.DISCARD
 
 	def draw(self):
-		
 		if len(self.controller.hand) >= self.controller.max_hand_size:
 			self.log("%s overdraws and loses %r!", self.controller, self)
 			self.discard()
@@ -236,7 +242,7 @@ class PlayableCard(BaseCard, Entity, TargetableByAuras):
 		zone = self.parent_card.zone if self.parent_card else self.zone
 		if zone != self.playable_zone:
 			return False
-		if self.controller.mana < self.cost:
+		if not self.controller.can_pay_cost(self):
 			return False
 		if PlayReq.REQ_TARGET_TO_PLAY in self.requirements:
 			if not self.targets:
@@ -265,10 +271,13 @@ class PlayableCard(BaseCard, Entity, TargetableByAuras):
 		Queue a Play action on the card.
 		"""
 		if choose:
-			choose = card = self.choose_cards.filter(id=choose)[0]
-			self.log("%r: choosing %r", self, choose)
+			if self.must_choose_one:
+				choose = card = self.choose_cards.filter(id=choose)[0]
+				self.log("%r: choosing %r", self, choose)
+			else:
+				raise InvalidAction("%r cannot be played with choice %r" % (self, choose))
 		else:
-			if self.choose_cards:
+			if self.must_choose_one:
 				raise InvalidAction("%r requires a choice (one of %r)" % (self, self.choose_cards))
 			card = self
 		if not self.is_playable():
@@ -390,10 +399,6 @@ class LiveEntity(PlayableCard, Entity):
 		return self.turn_killed == self.game.turn
 
 	def _hit(self, amount):
-		if self.immune:
-			self.log("%r is immune to %i damage", self, amount)
-			return 0
-
 		self.damage += amount
 		return amount
 
@@ -432,7 +437,7 @@ class Character(LiveEntity):
 
 	@property
 	def attacking(self):
-		return bool(self.attack_target)
+		return self.attack_target is not None
 
 	@property
 	def attack_targets(self):
@@ -676,6 +681,7 @@ class Spell(PlayableCard):
 		super().__init__(data)
 
 	def get_damage(self, amount, target):
+		amount = super().get_damage(amount, target)
 		if not self.immune_to_spellpower:
 			amount = self.controller.get_spell_damage(amount)
 		if self.receives_double_spelldamage_bonus:
@@ -838,6 +844,7 @@ class HeroPower(PlayableCard):
 		return self.game.queue_actions(self.controller, [actions.Activate(self, self.target)])
 
 	def get_damage(self, amount, target):
+		amount = super().get_damage(amount, target)
 		amount += self.controller.heropower_damage
 		amount <<= self.controller.hero_power_double
 		return amount
